@@ -1,4 +1,8 @@
 import 'package:smart_library/auth/auth.dart';
+import 'package:smart_library/pages/books_screen.dart';
+import 'package:smart_library/pages/home_screen.dart';
+import 'package:smart_library/pages/layout.dart';
+import 'package:smart_library/pages/setting.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
 import 'package:smart_library/theme/theme.dart';
 import 'package:smart_library/theme/theme_manager.dart';
@@ -36,7 +40,7 @@ class MyApp extends StatelessWidget {
       theme: lightMode,
       darkTheme: darkMode,
       themeMode: themeManager.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: Login(),
+      home: Layout(),
     );
   }
 }
