@@ -1,4 +1,5 @@
 import 'package:smart_library/auth/auth.dart';
+import 'package:smart_library/pages/add_book_screen.dart';
 import 'package:smart_library/pages/book_datails_screen.dart';
 import 'package:smart_library/pages/books_screen.dart'; // Assurez-vous que le nom du fichier est bon
 import 'package:smart_library/pages/home_screen.dart';
@@ -38,7 +39,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
 
-      home:  Layout(),
+      home:  AddBookScreen(),
     );
   }
 }

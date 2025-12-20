@@ -4,7 +4,15 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
-
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group == "androidx.activity") {
+                useVersion("1.9.3")
+            }
+        }
+    }
+}
 android {
     namespace = "com.example.smartlibrary"
     compileSdk = flutter.compileSdkVersion
