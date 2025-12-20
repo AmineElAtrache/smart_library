@@ -19,11 +19,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
 
+  // 1. NOUVEAU CONTROLLER POUR LA NOTE
+  final TextEditingController _noteController = TextEditingController();
+
   // State Variables
   String _readingStatus = 'To Read';
   File? _selectedImage;
-
-  // NOUVEAU : Variable pour les favoris
   bool _isFavorite = false;
 
   final List<String> _statusOptions = ['To Read', 'Reading', 'Finished'];
@@ -70,7 +71,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   void _saveBook() {
     if (_formKey.currentState!.validate()) {
 
-      // Ici vous récupérerez _isFavorite pour votre base de données
+      // Info: Vous pouvez récupérer la note ici avec _noteController.text
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -85,13 +86,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
   }
 
   @override
-
   Widget build(BuildContext context) {
-    // 1. ON AJOUTE LE SCAFFOLD ICI
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // 2. On ajoute une AppBar pour avoir le titre et la flèche retour
       appBar: AppBar(
         title: const Text(
             "Add a Book",
@@ -100,11 +97,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        // La flèche retour se mettra automatiquement car on a fait un Navigator.push
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-
-      // 3. Votre code précédent va dans le BODY du Scaffold
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -185,11 +179,26 @@ class _AddBookScreenState extends State<AddBookScreen> {
               const SizedBox(height: 20),
 
               _buildLabel("ISBN (Optional)"),
-              _buildTextField(_isbnController, "978-3-16-148410-0", Icons.qr_code),
+              _buildTextField(_isbnController, "978-3-16-148410-0", Icons.qr_code, isRequired: false),
+
+              const SizedBox(height: 20),
+
+              // ---------------------------------------------------------
+              // 3. NOUVEAU CHAMP : NOTE PERSONNELLE
+              // ---------------------------------------------------------
+              _buildLabel("Personal Note"),
+              _buildTextField(
+                  _noteController,
+                  "Write your thoughts here...",
+                  Icons.edit_note,
+                  maxLines: 4,      // Plus grand
+                  isRequired: false // Optionnel
+              ),
+              // ---------------------------------------------------------
 
               const SizedBox(height: 25),
 
-              // 3. READING STATUS
+              // 4. READING STATUS
               _buildLabel("Reading Status"),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
@@ -219,7 +228,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
               const SizedBox(height: 25),
 
-              // 4. FAVORITES SWITCH
+              // 5. FAVORITES SWITCH
               _buildLabel("Options"),
               Container(
                 decoration: BoxDecoration(
@@ -250,7 +259,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
               const SizedBox(height: 40),
 
-              // 5. SAVE BUTTON
+              // 6. SAVE BUTTON
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -287,12 +296,23 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, {bool isNumber = false}) {
+  // J'ai mis à jour cette fonction pour accepter maxLines et isRequired
+  Widget _buildTextField(
+      TextEditingController controller,
+      String hint,
+      IconData icon,
+      {
+        bool isNumber = false,
+        int maxLines = 1,      // Nouveau paramètre
+        bool isRequired = true // Nouveau paramètre
+      }) {
     return TextFormField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      maxLines: maxLines, // Utilisation de maxLines
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        // Validation conditionnelle
+        if (isRequired && (value == null || value.isEmpty)) {
           return 'This field is required';
         }
         return null;
@@ -303,6 +323,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
+        // Cette ligne assure que l'icône reste en haut si le champ est grand
+        prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
+        alignLabelWithHint: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -311,7 +334,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.black, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
     );
   }
