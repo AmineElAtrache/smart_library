@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smart_library/pages/add_book_screen.dart'; // Importez votre page d'ajout
+import 'package:smart_library/pages/add_book_screen.dart';
 import 'package:smart_library/pages/books_screen.dart';
 import 'package:smart_library/pages/home_screen.dart';
 import 'package:smart_library/pages/setting.dart';
@@ -12,19 +12,12 @@ class Layout extends StatefulWidget {
 }
 
 class _LayoutState extends State<Layout> {
-  // Liste des VRAIES pages (sans la page d'ajout car elle s'ouvre par dessus)
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const MyBooksScreen(),
-    const AddBookScreen(), // Place-holder (ne sera jamais affiché)
-    const SettingsScreen()
-  ];
-
   int _currentIndex = 0;
 
   // Fonction pour gérer la navigation
   void _onItemTapped(int index) {
     // Si l'utilisateur clique sur le bouton "+" (index 2)
+    // On ouvre la page d'ajout par-dessus le Layout
     if (index == 2) {
       Navigator.push(
         context,
@@ -41,6 +34,26 @@ class _LayoutState extends State<Layout> {
 
   @override
   Widget build(BuildContext context) {
+    // Nous définissons la liste des pages ICI (dans le build)
+    // C'est nécessaire pour pouvoir passer la fonction '_onItemTapped' au HomeScreen
+    final List<Widget> pages = [
+      // Index 0 : Home (On lui donne la capacité de changer d'onglet)
+      HomeScreen(onTabChange: _onItemTapped),
+
+      // Index 1 : My Books
+      const MyBooksScreen(),
+
+      // Index 2 : Placeholder pour le bouton "+" (Ne sera jamais affiché)
+      const SizedBox(),
+
+      // Index 3 : Settings
+      const SettingsScreen(),
+
+      // Index 4 : Profile
+      // (Si vous n'avez pas encore de ProfileScreen, je réutilise Settings ou un texte)
+      const Center(child: Text("Profile Page")),
+    ];
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -59,9 +72,8 @@ class _LayoutState extends State<Layout> {
       ),
 
       // ---------- BODY ----------
-      // On affiche la page correspondante.
-      // Si c'est Settings (index 3), _pages[3] affichera SettingsScreen.
-      body: _pages[_currentIndex],
+      // Affiche la page correspondant à l'index sélectionné
+      body: pages[_currentIndex],
 
       // ---------- BOTTOM NAV ----------
       bottomNavigationBar: Container(
@@ -74,33 +86,36 @@ class _LayoutState extends State<Layout> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed, // Important pour 4 items et +
+          type: BottomNavigationBarType.fixed, // Important car vous avez 5 items
           backgroundColor: Colors.white,
           selectedItemColor: Colors.black, // Noir quand sélectionné
           unselectedItemColor: Colors.grey,
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          elevation: 0, // On gère l'ombre via le Container au dessus
+          elevation: 0,
 
           items: [
+            // 0. Home
             const BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home), // Icône pleine quand active
+              activeIcon: Icon(Icons.home),
               label: 'Home',
             ),
+
+            // 1. My Books
             const BottomNavigationBarItem(
               icon: Icon(Icons.menu_book_outlined),
               activeIcon: Icon(Icons.menu_book),
               label: 'My Books',
             ),
 
-            // --- LE BOUTON SPÉCIAL (ADD) ---
+            // 2. LE BOUTON SPÉCIAL (ADD)
             BottomNavigationBarItem(
               icon: Container(
-                padding: const EdgeInsets.all(12), // Espace interne pour agrandir le cercle
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.black, // Le fond NOIR (Thème App)
-                  shape: BoxShape.circle, // Forme ronde
+                  color: Colors.black, // Le fond NOIR
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
@@ -111,23 +126,26 @@ class _LayoutState extends State<Layout> {
                 ),
                 child: const Icon(
                   Icons.add,
-                  color: Colors.white, // Icône blanche pour contraster
-                  size: 28, // Icône un peu plus grande
+                  color: Colors.white,
+                  size: 28,
                 ),
               ),
-              label: '', // Pas de texte pour ce bouton
+              label: '',
             ),
-            // -------------------------------
 
+            // 3. Settings
             const BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
               activeIcon: Icon(Icons.settings),
               label: 'Settings',
             ),
-            const BottomNavigationBarItem(icon: Icon(Icons.person_outlined),
+
+            // 4. Profile
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outlined),
               activeIcon: Icon(Icons.person),
-              label:'profile'
-            )
+              label: 'Profile',
+            ),
           ],
         ),
       ),

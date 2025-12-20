@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'book_datails_screen.dart';
+
 class MyBooksScreen extends StatelessWidget {
   const MyBooksScreen({Key? key}) : super(key: key);
 
@@ -29,7 +31,7 @@ class MyBooksScreen extends StatelessWidget {
                 return Stack(
                   children: [
                     // Image
-                    Container(
+                    GestureDetector(child: Container(
                       width: 130,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
@@ -45,6 +47,8 @@ class MyBooksScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                      onTap: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>BookDetailsScreen()));},
                     ),
                     // Bouton Favori (Sur l'image)
                     Positioned(
