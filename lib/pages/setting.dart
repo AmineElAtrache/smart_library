@@ -8,122 +8,139 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // État pour les switchs (exemples)
+  // État pour les switchs
   bool _isDarkMode = false;
   bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
-    return  SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20), // Un peu plus d'espace (20 au lieu de 16)
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
 
-            // ---------- PROFIL SECTION ----------
-            _buildProfileSection(),
+          // ---------- PROFIL SECTION ----------
+          _buildProfileSection(),
 
-            const SizedBox(height: 32),
+          const SizedBox(height: 30),
 
-            // ---------- GENERAL SETTINGS ----------
-            const Text(
+          // ---------- GENERAL SETTINGS ----------
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
               'General',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 16),
+          ),
 
-            _buildSettingItem(
-              icon: Icons.person_outline,
-              title: 'Edit Profile',
-              onTap: () {},
-            ),
-            _buildSettingItem(
-              icon: Icons.language,
-              title: 'Language',
-              trailing: const Text('English', style: TextStyle(color: Colors.grey)),
-              onTap: () {},
-            ),
+          _buildSettingItem(
+            icon: Icons.person_outline,
+            title: 'Edit Profile',
+            onTap: () {},
+          ),
+          _buildSettingItem(
+            icon: Icons.language,
+            title: 'Language',
+            trailing: const Text('English', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            onTap: () {},
+          ),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            // ---------- PREFERENCES ----------
-            const Text(
+          // ---------- PREFERENCES ----------
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
               'Preferences',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            const SizedBox(height: 16),
+          ),
 
-            _buildSettingSwitch(
-              icon: Icons.dark_mode_outlined,
-              title: 'Dark Mode',
-              value: _isDarkMode,
-              onChanged: (val) {
-                setState(() {
-                  _isDarkMode = val;
-                });
+          _buildSettingSwitch(
+            icon: Icons.dark_mode_outlined,
+            title: 'Dark Mode',
+            value: _isDarkMode,
+            onChanged: (val) {
+              setState(() {
+                _isDarkMode = val;
+              });
+            },
+          ),
+          _buildSettingSwitch(
+            icon: Icons.notifications_none,
+            title: 'Notifications',
+            value: _notificationsEnabled,
+            onChanged: (val) {
+              setState(() {
+                _notificationsEnabled = val;
+              });
+            },
+          ),
+
+          const SizedBox(height: 30),
+
+          // ---------- LOGOUT BUTTON ----------
+          SizedBox(
+            width: double.infinity,
+            height: 55, // Bouton un peu plus haut pour le confort
+            child: ElevatedButton(
+              onPressed: () {
+                // Logique de déconnexion
               },
-            ),
-            _buildSettingSwitch(
-              icon: Icons.notifications_none,
-              title: 'Notifications',
-              value: _notificationsEnabled,
-              onChanged: (val) {
-                setState(() {
-                  _notificationsEnabled = val;
-                });
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // ---------- LOGOUT BUTTON ----------
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50, // Fond rouge très clair
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Log Out',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFF0F0), // Fond rouge très très clair
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15), // Arrondi cohérent avec les inputs
                 ),
               ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Log Out',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      );
+          ),
 
+          const SizedBox(height: 80), // Espace pour la BottomBar
+        ],
+      ),
+    );
   }
 
   // --- WIDGET : SECTION PROFIL ---
   Widget _buildProfileSection() {
     return Row(
       children: [
+        // Avatar avec une bordure légère
         Container(
           width: 70,
           height: 70,
           decoration: BoxDecoration(
-            color: Colors.blue.shade50,
             shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade200, width: 2),
             image: const DecorationImage(
-              // Placeholder image ou votre image de profil
-              image: AssetImage('assets/images/1.jpg'),
+              // Assurez-vous d'avoir cette image ou mettez une NetworkImage
+              image: AssetImage('assets/images/femme.jpg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -133,15 +150,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'John Doe',
+              'Lisa Jewell', // Exemple de nom
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'johndoe@email.com',
+              'lisa.jewell@email.com',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 14,
@@ -150,15 +168,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+        // Bouton Edit rond et noir
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.05), // Gris très léger
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.edit_outlined, color: Colors.black),
+          ),
         ),
       ],
     );
   }
 
-  // --- WIDGET : ITEM CLASSIQUE (FLÈCHE) ---
+  // --- WIDGET : ITEM CLASSIQUE ---
   Widget _buildSettingItem({
     required IconData icon,
     required String title,
@@ -168,31 +193,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        // Petite ombre pour le relief (style carte)
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.shade100),
+        color: const Color(0xFFF5F7FA), // LE GRIS DE VOTRE THEME
+        borderRadius: BorderRadius.circular(15),
       ),
       child: ListTile(
         onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1), // Fond bleu clair assorti aux chips
+          decoration: const BoxDecoration(
+            color: Colors.white, // Fond blanc pour l'icône pour faire ressortir
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.blue, size: 22),
+          child: Icon(icon, color: Colors.black, size: 22),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       ),
@@ -209,34 +226,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.shade100),
+        color: const Color(0xFFF5F7FA), // LE GRIS DE VOTRE THEME
+        borderRadius: BorderRadius.circular(15),
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+          decoration: const BoxDecoration(
+            color: Colors.white,
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.blue, size: 22),
+          child: Icon(icon, color: Colors.black, size: 22),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: Colors.blue,
+          activeColor: Colors.black, // Switch Noir quand activé
+          activeTrackColor: Colors.black.withOpacity(0.3),
+          inactiveThumbColor: Colors.grey,
+          inactiveTrackColor: Colors.grey.shade300,
         ),
       ),
     );

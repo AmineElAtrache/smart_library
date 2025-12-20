@@ -8,7 +8,6 @@ class DatabaseHelper{
 
   //Tables
 
-
   String user = '''
    CREATE TABLE users (
    usrId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,6 +15,19 @@ class DatabaseHelper{
    email TEXT,
    usrName TEXT UNIQUE,
    usrPassword TEXT
+   )
+   ''';
+
+     String mybooks = '''
+   CREATE TABLE mybooks (
+    id TEXT,
+    usrId INTEGER,
+    title TEXT,
+    authors TEXT,
+    thumbnail TEXT,
+    description TEXT,
+    PRIMARY KEY (id, usrId),
+    FOREIGN KEY (usrId) REFERENCES users(usrId)
    )
    ''';
 
@@ -32,6 +44,17 @@ class DatabaseHelper{
     )
   ''';
 
+ String reading_history = '''
+   CREATE TABLE reading_history (
+   id	INTEGER	PRIMARY	KEY,
+   bookId	INTEGER,
+   startDate	TEXT,
+   endDate	TEXT,
+   status	TEXT,
+   )
+   ''';
+
+
   //Create a connection to the database
   Future<Database> initDB ()async{
     final databasePath = await getDatabasesPath();
@@ -40,6 +63,7 @@ class DatabaseHelper{
     return openDatabase(path,version: 1 , onCreate: (db,version)async{
       await db.execute(user);
       await db.execute(favorites);
+      await db.execute(mybooks);
     });
   }
 
@@ -64,6 +88,7 @@ class DatabaseHelper{
 
 
   //Get current User details
+  //bach ndiro check ila kan luser exist or no
   Future<Users?> getUser(String usrName)async{
     final Database db = await initDB();
     var res = await db.query("users",where: "usrName = ?", whereArgs: [usrName]);
@@ -76,7 +101,9 @@ class DatabaseHelper{
     return db.insert("favorites", {
       ...book.toMap(),
       "usrId": usrId,
-    });
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   // Remove a book from favorites by its id
@@ -87,6 +114,7 @@ class DatabaseHelper{
   }
 
   // Retrieve all favorite books
+  //had lfunction hia bach kan affichiw list dial favorit
   Future<List<Book>> getFavorites(int usrId) async {
     final Database db = await initDB();
     final List<Map<String, dynamic>> maps = await db.query(
@@ -107,5 +135,53 @@ class DatabaseHelper{
   }
 
 
+  Future<List<Book>> getUserBooks(int usrId) async {
+  final Database db = await initDB();
+  final List<Map<String, dynamic>> maps = await db.query(
+    "mybooks",
+    where: "usrId = ?",
+    whereArgs: [usrId],
+  );
 
+  return List.generate(maps.length, (i) {
+    return Book(
+      id: maps[i]['id'],
+      title: maps[i]['title'],
+      authors: maps[i]['authors'].toString().split(', '),
+      thumbnail: maps[i]['thumbnail'],
+      description: maps[i]['description'],
+    );
+  });
+}
+
+Future<int> insertUserBook(Book book, int usrId) async {
+  final Database db = await initDB();
+  return db.insert(
+    "mybooks",
+    {
+      ...book.toMap(), // assuming Book has a toMap() function
+      "usrId": usrId,
+    },
+    conflictAlgorithm: ConflictAlgorithm.replace, // avoid duplicates
+  );
+}
+
+Future<int> removeUserBook(String id, int usrId) async {
+  final Database db = await initDB();
+  return db.delete(
+    "mybooks",
+    where: "id = ? AND usrId = ?",
+    whereArgs: [id, usrId],
+  );
+}
+
+Future<void> deleteTable(String tableName) async {
+  try {
+    final Database db = await initDB();
+    await db.execute("DROP TABLE IF EXISTS $tableName");
+    print("Table $tableName deleted successfully.");
+  } catch (e) {
+    print("Error deleting table $tableName: $e");
+  }
+}
 }

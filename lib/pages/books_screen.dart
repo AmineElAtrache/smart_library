@@ -188,7 +188,7 @@ class MyBooksScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.blue,
+        color: Colors.black,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Text(

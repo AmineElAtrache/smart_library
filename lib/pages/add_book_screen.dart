@@ -85,9 +85,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
   }
 
   @override
+
   Widget build(BuildContext context) {
+    // 1. ON AJOUTE LE SCAFFOLD ICI
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // 2. On ajoute une AppBar pour avoir le titre et la flèche retour
       appBar: AppBar(
         title: const Text(
             "Add a Book",
@@ -95,11 +99,12 @@ class _AddBookScreenState extends State<AddBookScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        centerTitle: true,
+        // La flèche retour se mettra automatiquement car on a fait un Navigator.push
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
+
+      // 3. Votre code précédent va dans le BODY du Scaffold
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -214,11 +219,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
               const SizedBox(height: 25),
 
-              // 4. FAVORITES SWITCH (Remplace le Rating)
+              // 4. FAVORITES SWITCH
               _buildLabel("Options"),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA), // Même gris que les inputs
+                  color: const Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: SwitchListTile(
@@ -226,14 +231,13 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     "Add to Favorites",
                     style: TextStyle(fontWeight: FontWeight.w500),
                   ),
-                  // L'icône change : Coeur vide (gris) ou Coeur plein (rouge)
                   secondary: Icon(
                     _isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: _isFavorite ? Colors.red : Colors.grey,
                     size: 28,
                   ),
                   value: _isFavorite,
-                  activeColor: Colors.black, // Le bouton devient noir quand activé
+                  activeColor: Colors.black,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   onChanged: (bool value) {
