@@ -4,6 +4,8 @@ import 'package:smart_library/pages/books_screen.dart';
 import 'package:smart_library/pages/home_screen.dart';
 import 'package:smart_library/pages/setting.dart';
 
+import 'MyQuotesScreen.dart';
+
 class Layout extends StatefulWidget {
   const Layout({super.key});
 
@@ -51,7 +53,7 @@ class _LayoutState extends State<Layout> {
 
       // Index 4 : Profile
       // (Si vous n'avez pas encore de ProfileScreen, je réutilise Settings ou un texte)
-      const Center(child: Text("Profile Page")),
+      const MyQuotesScreen(),
     ];
 
     return Scaffold(
@@ -142,9 +144,9 @@ class _LayoutState extends State<Layout> {
 
             // 4. Profile
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outlined),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
+              icon: Icon(Icons.format_quote_outlined),
+              activeIcon: Icon(Icons.format_quote_sharp),
+              label: 'Quotes',
             ),
           ],
         ),
