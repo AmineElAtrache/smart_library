@@ -61,7 +61,7 @@ class _MyQuotesScreenState extends State<MyQuotesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
 
-      // J'ai remis l'AppBar pour que tu puisses revenir en arrière
+  
      
       // Le bouton ouvre maintenant la nouvelle page
       floatingActionButton: FloatingActionButton.extended(
