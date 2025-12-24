@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AddBookScreen extends StatefulWidget {
   const AddBookScreen({super.key});
@@ -40,12 +42,40 @@ class _AddBookScreenState extends State<AddBookScreen> {
         _isbnController.text = result;
       });
 
-      // Ici, plus tard, vous pourrez ajouter une fonction pour
-      // remplir automatiquement le Titre et l'Auteur via une API (Google Books)
+      try {
+        // Fetch book data from Google Books API
+        final response = await http.get(Uri.parse('https://www.googleapis.com/books/v1/volumes?q=isbn:$result'));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("ISBN found: $result"), backgroundColor: Colors.green),
-      );
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['totalItems'] > 0) {
+            final book = data['items'][0]['volumeInfo'];
+
+            setState(() {
+              _titleController.text = book['title'] ?? '';
+              _authorController.text = (book['authors'] != null && book['authors'].isNotEmpty) ? book['authors'].join(', ') : '';
+              _yearController.text = book['publishedDate']?.split('-')[0] ?? '';
+              _categoryController.text = (book['categories'] != null && book['categories'].isNotEmpty) ? book['categories'][0] : '';
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Book data fetched successfully!"), backgroundColor: Colors.green),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("No book data found for this ISBN."), backgroundColor: Colors.red),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to fetch book data."), backgroundColor: Colors.red),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
