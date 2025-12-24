@@ -7,7 +7,7 @@ import 'package:smart_library/pages/setting.dart';
 import 'MyQuotesScreen.dart';
 
 class Layout extends StatefulWidget {
-  const Layout({super.key});
+  const Layout();
 
   @override
   State<Layout> createState() => _LayoutState();

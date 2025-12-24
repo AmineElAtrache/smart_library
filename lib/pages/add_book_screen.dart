@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class AddBookScreen extends StatefulWidget {
   const AddBookScreen({super.key});
@@ -18,8 +19,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
   final TextEditingController _isbnController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
-
-  // 1. NOUVEAU CONTROLLER POUR LA NOTE
   final TextEditingController _noteController = TextEditingController();
 
   // State Variables
@@ -29,10 +28,30 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   final List<String> _statusOptions = ['To Read', 'Reading', 'Finished'];
 
+  // --- FONCTION POUR SCANNER L'ISBN ---
+  Future<void> _scanISBN() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+    );
+
+    if (result != null) {
+      setState(() {
+        _isbnController.text = result;
+      });
+
+      // Ici, plus tard, vous pourrez ajouter une fonction pour
+      // remplir automatiquement le Titre et l'Auteur via une API (Google Books)
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ISBN found: $result"), backgroundColor: Colors.green),
+      );
+    }
+  }
+
   // Function to pick an image
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-
     showModalBottomSheet(
       context: context,
       builder: (ctx) => Container(
@@ -70,9 +89,6 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   void _saveBook() {
     if (_formKey.currentState!.validate()) {
-
-      // Info: Vous pouvez récupérer la note ici avec _noteController.text
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(_isFavorite
@@ -106,8 +122,55 @@ class _AddBookScreenState extends State<AddBookScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(width: 40),
 
-              // 1. IMAGE SELECTION
+
+              // ===============================================
+              // 0. BOUTON SCAN EN HAUT (NOUVEAU)
+              // ===============================================
+              GestureDetector(
+                onTap: _scanISBN,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black, // Fond noir pour attirer l'attention
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.qr_code_scanner, color: Colors.white, size: 28),
+                      SizedBox(width: 12),
+                      Text(
+                        "Scan ISBN Code",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 50),
+
+              const Center(child: Text("— OR FILL MANUALLY —", style: TextStyle(color: Colors.grey, fontSize: 12))),
+
+              const SizedBox(height: 20),
+              // ===============================================
+
+
+              // 1. IMAGE SELECTION (Reste inchangé)
               Center(
                 child: GestureDetector(
                   onTap: _pickImage,
@@ -178,23 +241,25 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
               const SizedBox(height: 20),
 
+              // 3. ISBN (J'ai retiré le bouton de scan d'ici pour ne le laisser qu'en haut)
               _buildLabel("ISBN (Optional)"),
-              _buildTextField(_isbnController, "978-3-16-148410-0", Icons.qr_code, isRequired: false),
+              _buildTextField(
+                _isbnController,
+                "978-3-16-148410-0",
+                Icons.qr_code,
+                isRequired: false,
+              ),
 
               const SizedBox(height: 20),
 
-              // ---------------------------------------------------------
-              // 3. NOUVEAU CHAMP : NOTE PERSONNELLE
-              // ---------------------------------------------------------
               _buildLabel("Personal Note"),
               _buildTextField(
                   _noteController,
                   "Write your thoughts here...",
                   Icons.edit_note,
-                  maxLines: 4,      // Plus grand
-                  isRequired: false // Optionnel
+                  maxLines: 4,
+                  isRequired: false
               ),
-              // ---------------------------------------------------------
 
               const SizedBox(height: 25),
 
@@ -296,22 +361,22 @@ class _AddBookScreenState extends State<AddBookScreen> {
     );
   }
 
-  // J'ai mis à jour cette fonction pour accepter maxLines et isRequired
   Widget _buildTextField(
       TextEditingController controller,
       String hint,
       IconData icon,
       {
         bool isNumber = false,
-        int maxLines = 1,      // Nouveau paramètre
-        bool isRequired = true // Nouveau paramètre
+        int maxLines = 1,
+        bool isRequired = true,
+        // J'ai gardé le paramètre optionnel mais je ne l'utilise plus dans ce code
+        Widget? suffixIcon,
       }) {
     return TextFormField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      maxLines: maxLines, // Utilisation de maxLines
+      maxLines: maxLines,
       validator: (value) {
-        // Validation conditionnelle
         if (isRequired && (value == null || value.isEmpty)) {
           return 'This field is required';
         }
@@ -323,7 +388,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
         hintText: hint,
         hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
         prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
-        // Cette ligne assure que l'icône reste en haut si le champ est grand
+
+        suffixIcon: suffixIcon,
+
         prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 0),
         alignLabelWithHint: true,
         border: OutlineInputBorder(
@@ -335,6 +402,35 @@ class _AddBookScreenState extends State<AddBookScreen> {
           borderSide: const BorderSide(color: Colors.black, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// ECRAN DE SCAN SÉPARÉ (Toujours nécessaire)
+// ==========================================
+class BarcodeScannerScreen extends StatelessWidget {
+  const BarcodeScannerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan ISBN')),
+      body: MobileScanner(
+        controller: MobileScannerController(
+          detectionSpeed: DetectionSpeed.noDuplicates,
+          returnImage: false,
+        ),
+        onDetect: (capture) {
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+            if (barcode.rawValue != null) {
+              Navigator.pop(context, barcode.rawValue);
+              break;
+            }
+          }
+        },
       ),
     );
   }

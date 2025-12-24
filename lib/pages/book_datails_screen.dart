@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'MyQuotesScreen.dart';
+import 'layout.dart';
+
 class BookDetailsScreen extends StatefulWidget {
   final Map<String, String> book;
 
@@ -133,6 +136,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    int id_page;
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -146,8 +150,8 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border, color: Colors.black),
-            onPressed: _showOptions,
+            icon: const Icon(Icons.format_quote, color: Colors.black),
+            onPressed:(){}
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz, color: Colors.black),
