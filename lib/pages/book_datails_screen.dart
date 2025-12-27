@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:smart_library/models/books_model.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
+import 'package:intl/intl.dart'; // Importer pour le formatage de la date
+import 'package:smart_library/pages/edit_book_screen.dart'; // Importer l'écran d'édition
 
 import '../providers/favorites_provider.dart';
 import 'layout.dart';
@@ -21,31 +23,29 @@ class BookDetailsScreen extends StatefulWidget {
 }
 
 class _BookDetailsScreenState extends State<BookDetailsScreen> {
-  // 1. Current Page tracks where the user is (connected to Provider)
   double _currentPage = 0;
-  
-  // 2. Total Pages is FIXED at 300 (or the book's length)
-  final int _totalPages = 300; 
-  
+  late int _totalPages;
   late TextEditingController _pageController;
   int _bookIndex = -1;
+
+  // We need to keep a local copy of the book to display updates
+  Book? _displayedBook;
 
   @override
   void initState() {
     super.initState();
+    _displayedBook = widget.book; // Initialize with the passed book
+    _totalPages = _displayedBook?.totalPages ?? 0;
     _pageController = TextEditingController(text: "0");
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Setup MyBooksProvider stuff
-      if (widget.book != null) {
+      if (_displayedBook != null) {
         final provider = Provider.of<MyBooksProvider>(context, listen: false);
-        final index = provider.myBooks.indexWhere((b) => b.id == widget.book!.id);
+        final index = provider.myBooks.indexWhere((b) => b.id == _displayedBook!.id);
         
         setState(() {
           _bookIndex = index;
-          // 3. LOAD SAVED PROGRESS FROM PROVIDER
-          // We treat the provider's 'pagesCount' as the "Page Reached"
-          _currentPage = provider.pagesCount.toDouble();
+          _currentPage = _displayedBook!.pages.toDouble();
           _pageController.text = _currentPage.toInt().toString();
         });
       }
@@ -71,7 +71,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     final provider = Provider.of<MyBooksProvider>(context, listen: false);
 
     if (userId != null && _bookIndex != -1) {
-      provider.updateState(_bookIndex, widget.book!.id, userId, newStatus);
+      provider.updateState(_bookIndex, _displayedBook!.id, userId, newStatus);
     }
   }
 
@@ -90,8 +90,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
       _pageController.text = _totalPages.toString();
     });
     
-    // Update the provider to show we reached the end
-    Provider.of<MyBooksProvider>(context, listen: false).loadPagesCounter(_totalPages);
+    final userId = Provider.of<UserProvider>(context, listen: false).currentUser?.usrId;
+    if (userId != null) {
+      Provider.of<MyBooksProvider>(context, listen: false)
+          .savePageToDatabase(_displayedBook!.id, userId, _totalPages);
+    }
 
     _updateBookStatus('Finished');
     ScaffoldMessenger.of(context).showSnackBar(
@@ -100,15 +103,13 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
   }
 
 void _saveProgress() {
-     // 1. Get the User ID first
      final userId = Provider.of<UserProvider>(context, listen: false).currentUser?.usrId;
 
      if (userId != null) {
         _updateBookStatus('Reading');
         
-        // 2. Pass userId as the second argument
         Provider.of<MyBooksProvider>(context, listen: false)
-            .savePageToDatabase(widget.book!.id, userId, _currentPage.toInt());
+            .savePageToDatabase(_displayedBook!.id, userId, _currentPage.toInt());
             
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Progress Saved"), backgroundColor: Colors.green)
@@ -119,8 +120,8 @@ void _saveProgress() {
   void _onPageInputChanged(String value) {
     int? newPage = int.tryParse(value);
     if (newPage != null) {
-      // Safety check: Don't let user type more than 300
       if (newPage > _totalPages) newPage = _totalPages;
+      if (newPage < 0) newPage = 0;
 
       setState(() => _currentPage = newPage!.toDouble());
     }
@@ -139,18 +140,49 @@ void _saveProgress() {
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.blue),
                 title: const Text("Modify"),
-                onTap: () => Navigator.pop(context),
+                onTap: () async {
+                  // Pass _displayedBook instead of widget.book
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EditBookScreen(book: _displayedBook!)),
+                  );
+
+                  if (result != null && result is Book) {
+                    // Update the local state with the returned book
+                    setState(() {
+                      _displayedBook = result;
+                      _totalPages = result.totalPages;
+                      _currentPage = result.pages.toDouble();
+                      _pageController.text = _currentPage.toInt().toString();
+                    });
+
+                    final userId = Provider.of<UserProvider>(context, listen: false).currentUser?.usrId;
+                    if (userId != null) {
+                       // The database update is already done in EditBookScreen, but we can refresh the list if needed
+                       // provider.updateBook(result, userId); // Already done in EditBookScreen
+                       
+                       // Re-fetch data to be safe and update global provider state
+                       await Provider.of<MyBooksProvider>(context, listen: false).fetchUserBooks(userId);
+                       
+                       Navigator.pop(context); // Close modal
+                    }
+                  }
+                },
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
                 title: const Text("Delete", style: TextStyle(color: Colors.red)),
                 onTap: () async {
-                  final bookId = widget.book!.id;
+                  final bookId = _displayedBook!.id;
                   final userId = Provider.of<UserProvider>(context, listen: false).currentUser?.usrId;
                   await Provider.of<FavoriteBooksProvider>(context, listen: false).removeFavorite(bookId);
                   await Provider.of<MyBooksProvider>(context, listen: false).removeBook(bookId, userId!);
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Layout(id_page: 1)));
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => Layout(id_page: 1)),
+                        (route) => false,
+                  );
                 },
               ),
             ],
@@ -162,21 +194,30 @@ void _saveProgress() {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.book == null) return const Scaffold(body: Center(child: Text("Book not found")));
+    if (_displayedBook == null) return const Scaffold(body: Center(child: Text("Book not found")));
 
     final status = _getLiveStatus(); 
     final isReading = status == 'Reading';
     final isFinished = status == 'Finished';
 
-    final title = widget.book!.title;
-    final authors = widget.book!.authors.isNotEmpty ? widget.book!.authors.join(', ') : "Unknown Author";
-    final description = widget.book!.description;
+    final title = _displayedBook!.title;
+    final authors = _displayedBook!.authors.isNotEmpty ? _displayedBook!.authors.join(', ') : "Unknown Author";
+    final description = _displayedBook!.description;
     
+    String addedDateText = "Not specified";
+    if (_displayedBook!.addedDate != null) {
+      try {
+        final date = DateTime.parse(_displayedBook!.addedDate!);
+        addedDateText = DateFormat.yMMMd().format(date);
+      } catch (e) {
+      }
+    }
+
     ImageProvider imageProvider;
-    if (widget.book!.thumbnail.isNotEmpty) {
-      imageProvider = widget.book!.thumbnail.startsWith('http')
-          ? NetworkImage(widget.book!.thumbnail)
-          : FileImage(File(widget.book!.thumbnail)) as ImageProvider;
+    if (_displayedBook!.thumbnail.isNotEmpty) {
+      imageProvider = _displayedBook!.thumbnail.startsWith('http')
+          ? NetworkImage(_displayedBook!.thumbnail)
+          : FileImage(File(_displayedBook!.thumbnail)) as ImageProvider;
     } else {
       imageProvider = const AssetImage('assets/images/empty.png');
     }
@@ -217,8 +258,17 @@ void _saveProgress() {
             const SizedBox(height: 8),
             Text(authors, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
             const SizedBox(height: 12),
-            Text(widget.book?.category ?? "General", style: TextStyle(color: Colors.grey.shade600)),
+            Text(_displayedBook?.category ?? "General", style: TextStyle(color: Colors.grey.shade600)),
+            
             const SizedBox(height: 10),
+            Center(
+              child: Text(
+                "Added on: $addedDateText",
+                style: TextStyle(color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+              ),
+            ),
+
+            const SizedBox(height: 20),
 
             Container(
               padding: const EdgeInsets.all(20),
@@ -227,7 +277,6 @@ void _saveProgress() {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  // Display FIXED Total Pages
                   Text("$_totalPages Pages", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                   const SizedBox(height: 20),
                   Text(description, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, color: Colors.black87)),
@@ -288,17 +337,15 @@ void _saveProgress() {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text("Reading Progress", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text("${(_currentPage / _totalPages * 100).toInt()}%", style: TextStyle(fontWeight: FontWeight.bold, color: isReading ? Colors.black : Colors.grey)),
+                            Text("${_totalPages > 0 ? (_currentPage / _totalPages * 100).toInt() : 0}%", style: TextStyle(fontWeight: FontWeight.bold, color: isReading ? Colors.black : Colors.grey)),
                           ],
                         ),
                         const SizedBox(height: 10),
                         
-                        // 5. SLIDER FIX: Max is now _totalPages (300)
-                        // This prevents the "Value is not between 0 and 1" crash
                         Slider(
                           value: _currentPage, 
                           min: 0, 
-                          max: _totalPages.toDouble(), 
+                          max: _totalPages > 0 ? _totalPages.toDouble() : 1, 
                           activeColor: Colors.black,
                           onChanged: (value) => setState(() {
                             _currentPage = value;
@@ -341,7 +388,6 @@ void _saveProgress() {
 
             Center(
               child: ElevatedButton(
-                // No arguments needed for _markAsFinished now
                 onPressed: isFinished ? null : _markAsFinished,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,

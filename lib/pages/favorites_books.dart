@@ -9,7 +9,7 @@ class FavoritesBooksWidget extends StatelessWidget {
 
   // Helper to determine if image is local File, Network, or Asset
   ImageProvider _buildImage(String thumbnail) {
-    if (thumbnail.isEmpty) return const AssetImage('assets/images/test.jpg');
+    if (thumbnail.isEmpty) return const AssetImage('assets/images/empty.jpg');
     if (thumbnail.startsWith('http')) return NetworkImage(thumbnail);
     return FileImage(File(thumbnail));
   }

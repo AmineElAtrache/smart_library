@@ -8,6 +8,7 @@ class Book {
   final String status;
   final int pages; // Current Progress (Pages lues)
   final int totalPages; // Total length of the book (Nombre total de pages)
+  final String? addedDate;
 
   Book({
     required this.id,
@@ -19,6 +20,7 @@ class Book {
     this.status = 'Not Read',
     this.pages = 0, 
     this.totalPages = 0, // Default
+    this.addedDate,
   });
 
   factory Book.fromMap(Map<String, dynamic> map) {
@@ -33,8 +35,8 @@ class Book {
       category: map['category']?.toString() ?? 'General', 
       status: map['status']?.toString() ?? 'Not Read',
       pages: (map['pages'] as int?) ?? 0,
-      // Retrieve totalPages from DB, or fallback to pages (if old record) or 0
       totalPages: (map['totalPages'] as int?) ?? 0, 
+      addedDate: map['addedDate'] as String?,
     );
   }
 
@@ -48,7 +50,8 @@ class Book {
       'category': category,
       'status': status,
       'pages': pages, 
-      'totalPages': totalPages, // Save total
+      'totalPages': totalPages,
+      'addedDate': addedDate,
     };
   }
 
@@ -56,7 +59,6 @@ class Book {
     final volumeInfo = json['volumeInfo'];
     final categoryList = volumeInfo['categories'] as List<dynamic>?;
     
-    // When getting from API, pages is 0 (progress), totalPages is the count
     int pCount = (volumeInfo['pageCount'] as int?) ?? 0;
 
     return Book(
@@ -71,10 +73,11 @@ class Book {
       status: 'Not Read',
       pages: 0, // Start at 0 progress
       totalPages: pCount, // Store the total length
+      addedDate: DateTime.now().toIso8601String(), // Set current date on creation from API
     );
   }
 
-  Book copyWith({String? status, int? pages, int? totalPages}) {
+  Book copyWith({String? status, int? pages, int? totalPages, String? addedDate}) {
     return Book(
       id: id,
       title: title,
@@ -85,6 +88,7 @@ class Book {
       status: status ?? this.status,
       pages: pages ?? this.pages,
       totalPages: totalPages ?? this.totalPages,
+      addedDate: addedDate ?? this.addedDate,
     );
   }
 }

@@ -10,6 +10,8 @@ import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
 
+import 'layout.dart';
+
 class AddBookScreen extends StatefulWidget {
   const AddBookScreen({super.key});
 
@@ -149,7 +151,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
         if (mounted) {
           _showSnackBar("Book saved successfully!", Colors.green);
-          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => Layout(id_page: 1)),
+                (route) => false,
+          );
         }
       } catch (e) {
         _showSnackBar("Error saving: $e", Colors.red);

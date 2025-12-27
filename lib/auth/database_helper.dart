@@ -6,8 +6,6 @@ import 'package:sqflite/sqflite.dart';
 class DatabaseHelper{
   final databaseName = "books.db";
 
-  //Tables
-
   String user = '''
    CREATE TABLE users (
    usrId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +15,7 @@ class DatabaseHelper{
    )
    ''';
 
-     String mybooks = '''
+  String mybooks = '''
    CREATE TABLE mybooks (
     id TEXT,
     usrId INTEGER,
@@ -28,6 +26,8 @@ class DatabaseHelper{
     category TEXT,
     status TEXT,
     pages INTEGER,
+    totalPages INTEGER,
+    addedDate TEXT,
     PRIMARY KEY (id, usrId),
     FOREIGN KEY (usrId) REFERENCES users(usrId)
    )
@@ -44,12 +44,14 @@ class DatabaseHelper{
       category TEXT,
       status TEXT,
       pages INTEGER,
+      totalPages INTEGER,
+      addedDate TEXT,
       PRIMARY KEY (id, usrId),
       FOREIGN KEY (usrId) REFERENCES users(usrId)
     )
   ''';
 
- String reading_history = '''
+  String reading_history = '''
    CREATE TABLE reading_history (
    id	INTEGER	PRIMARY	KEY AUTOINCREMENT,
    bookId	TEXT,
@@ -61,7 +63,7 @@ class DatabaseHelper{
    )
    ''';
    
-   String notes = '''
+  String notes = '''
     CREATE TABLE notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usrId INTEGER,
@@ -72,8 +74,7 @@ class DatabaseHelper{
     )
    ''';
 
-   // New Table for tracking daily page progress
-   String daily_reading_log = '''
+  String daily_reading_log = '''
     CREATE TABLE daily_reading_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usrId INTEGER,
@@ -84,52 +85,46 @@ class DatabaseHelper{
     )
    ''';
 
-
-  //Create a connection to the database
   Future<Database> initDB ()async{
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, databaseName);
 
-    return openDatabase(path,version: 4 , 
+    return openDatabase(path, version: 7, 
     onCreate: (db,version)async{
       await db.execute(user);
-      await db.execute(favorites);
       await db.execute(mybooks);
+      await db.execute(favorites);
       await db.execute(reading_history);
       await db.execute(notes);
       await db.execute(daily_reading_log);
     },
     onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 3) {
+        if (oldVersion < 5) {
            try {
-             await db.execute("ALTER TABLE favorites ADD COLUMN category TEXT DEFAULT 'General'");
-             await db.execute("ALTER TABLE favorites ADD COLUMN status TEXT DEFAULT 'Not Read'");
-             await db.execute("ALTER TABLE favorites ADD COLUMN pages INTEGER DEFAULT 0");
-
-             await db.execute("ALTER TABLE mybooks ADD COLUMN category TEXT DEFAULT 'General'");
-             await db.execute("ALTER TABLE mybooks ADD COLUMN status TEXT DEFAULT 'Not Read'");
-             await db.execute("ALTER TABLE mybooks ADD COLUMN pages INTEGER DEFAULT 0");
-             
-             await db.execute(reading_history);
-             await db.execute(notes);
+             await db.execute("ALTER TABLE mybooks ADD COLUMN totalPages INTEGER DEFAULT 0");
+             await db.execute("ALTER TABLE favorites ADD COLUMN totalPages INTEGER DEFAULT 0");
            } catch (e) {
-             print("Migration error (ignored if columns exist): $e");
+             print("Migration error v5 (ignored if columns exist): $e");
            }
         }
-        if (oldVersion < 4) {
+        if (oldVersion < 6) {
           try {
-            await db.execute(daily_reading_log);
+             await db.execute("ALTER TABLE mybooks ADD COLUMN addedDate TEXT");
           } catch (e) {
-             print("Migration error v4: $e");
+             print("Migration error v6: $e");
+          }
+        }
+        if (oldVersion < 7) {
+          try {
+             await db.execute("ALTER TABLE favorites ADD COLUMN addedDate TEXT");
+          } catch (e) {
+             print("Migration error v7: $e");
           }
         }
       },
     );
   }
 
-  //Function
-
-  //Authentication
   Future<bool> authenticate(Users usr)async{
     final Database db = await initDB();
     var result = await db.rawQuery("select * from users where email = '${usr.email}' AND usrPassword = '${usr.password}' ");
@@ -140,49 +135,33 @@ class DatabaseHelper{
     }
   }
 
-  //Sign up
   Future<int> createUser(Users usr)async{
     final Database db = await initDB();
     return db.insert("users", usr.toMap());
   }
 
-
-  //Get current User details
   Future<Users?> getUser(String email)async{
     final Database db = await initDB();
     var res = await db.query("users",where: "email = ?", whereArgs: [email]);
     return res.isNotEmpty? Users.fromMap(res.first):null;
   }
 
-  // Insert a book into favorites
   Future<int> insertFavorite(Book book, int usrId) async {
     final Database db = await initDB();
-    
-    final Map<String, dynamic> bookMap = {
-      'id': book.id,
-      'title': book.title,
-      'authors': book.authors.map((author) => author.toString()).join(', '),
-      'thumbnail': book.thumbnail,
-      'description': book.description,
-      'category': book.category,
-      'status': book.status,
-      'pages': book.pages,
-      'usrId': usrId,
-    };
-
+    final Map<String, dynamic> bookMap = book.toMap();
+    bookMap['usrId'] = usrId;
+    bookMap['addedDate'] ??= DateTime.now().toIso8601String();
     return db.insert("favorites", bookMap,
     conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  // Remove a book from favorites by its id
   Future<int> removeFavorite(String id, int usrId) async {
     final Database db = await initDB();
     return db.delete("favorites", where: "id = ? AND usrId = ?", whereArgs: [id, usrId],
     );
   }
 
-  // Retrieve all favorite books
   Future<List<Book>> getFavorites(int usrId) async {
     final Database db = await initDB();
     final List<Map<String, dynamic>> maps = await db.query(
@@ -192,73 +171,58 @@ class DatabaseHelper{
     );
 
     return List.generate(maps.length, (i) {
-      return Book(
-        id: maps[i]['id'],
-        title: maps[i]['title'],
-        authors: maps[i]['authors'].toString().split(', '),
-        thumbnail: maps[i]['thumbnail'],
-        description: maps[i]['description'],
-        category: maps[i]['category'] ?? 'General',
-        status: maps[i]['status'] ?? 'Not Read',
-        pages: maps[i]['pages'] ?? 0,
-      );
+      return Book.fromMap(maps[i]);
     });
   }
 
 
   Future<List<Book>> getUserBooks(int usrId) async {
-  final Database db = await initDB();
-  final List<Map<String, dynamic>> maps = await db.query(
-    "mybooks",
-    where: "usrId = ?",
-    whereArgs: [usrId],
-  );
-
-  return List.generate(maps.length, (i) {
-    return Book(
-      id: maps[i]['id'],
-      title: maps[i]['title'],
-      authors: maps[i]['authors'].toString().split(', '),
-      thumbnail: maps[i]['thumbnail'],
-      description: maps[i]['description'],
-      category: maps[i]['category'] ?? 'General',
-      status: maps[i]['status'] ?? 'Not Read',
-      pages: maps[i]['pages'] ?? 0,
+    final Database db = await initDB();
+    final List<Map<String, dynamic>> maps = await db.query(
+      "mybooks",
+      where: "usrId = ?",
+      whereArgs: [usrId],
     );
-  });
-}
 
-Future<int> insertUserBook(Book book, int usrId) async {
-  final Database db = await initDB();
-    final Map<String, dynamic> bookMap = {
-      'id': book.id,
-      'title': book.title,
-      'authors': book.authors.map((author) => author.toString()).join(', '),
-      'thumbnail': book.thumbnail,
-      'description': book.description,
-      'category': book.category,
-      'status': book.status,
-      'pages': book.pages,
-      'usrId': usrId,
-    };
+    return List.generate(maps.length, (i) {
+      return Book.fromMap(maps[i]);
+    });
+  }
 
-  return db.insert(
-    "mybooks",
-    bookMap,
-    conflictAlgorithm: ConflictAlgorithm.replace, 
-  );
-}
+  Future<int> insertUserBook(Book book, int usrId) async {
+    final Database db = await initDB();
+    final Map<String, dynamic> bookMap = book.toMap();
+    bookMap['usrId'] = usrId;
+    bookMap['addedDate'] ??= DateTime.now().toIso8601String();
+    
+    return db.insert(
+      "mybooks",
+      bookMap,
+      conflictAlgorithm: ConflictAlgorithm.replace, 
+    );
+  }
 
-Future<int> removeUserBook(String id, int usrId) async {
-  final Database db = await initDB();
-  return db.delete(
-    "mybooks",
-    where: "id = ? AND usrId = ?",
-    whereArgs: [id, usrId],
-  );
-}
+  // --- NEW: Method to update a book's details ---
+  Future<int> updateUserBook(Book book, int usrId) async {
+    final Database db = await initDB();
+    final Map<String, dynamic> bookMap = book.toMap();
+    // usrId is needed to ensure we update the book for the correct user
+    return await db.update(
+      "mybooks",
+      bookMap,
+      where: "id = ? AND usrId = ?",
+      whereArgs: [book.id, usrId],
+    );
+  }
 
-// === Reading History Methods ===
+  Future<int> removeUserBook(String id, int usrId) async {
+    final Database db = await initDB();
+    return db.delete(
+      "mybooks",
+      where: "id = ? AND usrId = ?",
+      whereArgs: [id, usrId],
+    );
+  }
 
   Future<List<Map<String, dynamic>>> getReadingHistory(int usrId) async {
     final Database db = await initDB();
@@ -275,13 +239,9 @@ Future<int> removeUserBook(String id, int usrId) async {
      });
   }
 
-  // === Progress & State Methods ===
-
-  // Updated to track daily progress delta
   Future<void> updatePageProgress(String bookId, int usrId, int newPage) async {
      final Database db = await initDB();
      
-     // 1. Get current pages to calculate delta
      var res = await db.query("mybooks", columns: ['pages'], where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
      int currentPages = 0;
      if (res.isNotEmpty && res.first['pages'] != null) {
@@ -290,9 +250,6 @@ Future<int> removeUserBook(String id, int usrId) async {
 
      int delta = newPage - currentPages;
 
-     // 2. Log if positive progress (we ignore rewinds for the monthly goal to avoid cheating? or allow corrections? 
-     // Let's assume positive progress counts towards goal. Correcting downwards doesn't remove from "effort" technically but for stats it might be tricky.
-     // For simplicity: log positive delta.)
      if (delta > 0) {
        await db.insert("daily_reading_log", {
          "usrId": usrId,
@@ -305,11 +262,9 @@ Future<int> removeUserBook(String id, int usrId) async {
      await db.update("mybooks", {"pages": newPage}, where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
   }
   
-  // New method to get monthly progress
   Future<int> getPagesReadThisMonth(int usrId) async {
     final Database db = await initDB();
     final now = DateTime.now();
-    // ISO8601 string sortable: yyyy-MM-01
     final startOfMonth = DateTime(now.year, now.month, 1).toIso8601String();
     
     final result = await db.rawQuery('''
@@ -328,8 +283,6 @@ Future<int> removeUserBook(String id, int usrId) async {
     final Database db = await initDB();
     await db.update("mybooks", {"status": status}, where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
   }
-
-  // === Notes Methods ===
 
   Future<List<Map<String, dynamic>>> getNotes(int usrId) async {
      final Database db = await initDB();
