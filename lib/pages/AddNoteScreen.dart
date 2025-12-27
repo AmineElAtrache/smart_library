@@ -15,16 +15,15 @@ class AddNoteScreen extends StatefulWidget {
 }
 
 class _AddNoteScreenState extends State<AddNoteScreen> {
-  // On remplace le controller texte par un objet Book sélectionné
   Book? _selectedBook;
   final _pageController = TextEditingController();
   final _noteController = TextEditingController();
+  final _bookSearchController = TextEditingController(); // Contrôleur pour la recherche
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   @override
   void initState() {
     super.initState();
-    // Charger les livres de l'utilisateur au démarrage si nécessaire
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userId = userProvider.currentUser?.usrId;
     if (userId != null) {
@@ -36,10 +35,10 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   void dispose() {
     _pageController.dispose();
     _noteController.dispose();
+    _bookSearchController.dispose();
     super.dispose();
   }
 
-  // --- Logic to save the quote to the Database ---
   void _submitData() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final int? userId = userProvider.currentUser?.usrId;
@@ -51,7 +50,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       return;
     }
 
-    // Vérification : un livre doit être sélectionné
     if (_selectedBook == null || _noteController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a book and enter a note.")),
@@ -59,34 +57,12 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       return;
     }
 
-    final newNote = {
-      'usrId': userId,
-      'bookId': _selectedBook!.id, // On stocke l'ID ou le titre selon la DB
-      'bookTitle': _selectedBook!.title, // On garde le titre pour l'affichage facile
-      'pageNumber': _pageController.text.isEmpty ? '?' : _pageController.text,
-      'noteText': _noteController.text,
-      'date': "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
-    };
-
     try {
-      // Attention: La table 'notes' dans DatabaseHelper v3 attend 'bookId' (TEXT) et 'content' (TEXT)
-      // Il faut adapter les clés de la map à ce que la méthode insertNote attend.
-      // D'après votre DatabaseHelper, la table notes a: id, usrId, bookId, content, createdAt.
-      // Mais votre méthode insertNote prend une Map dynamique.
-      // Modifions la structure pour correspondre à votre probable usage ou ajoutons les colonnes manquantes.
-      // Ici, on va mapper pour correspondre à une structure générique, mais l'idéal est de respecter le schéma DB.
-      
-      // Adaptation au schéma de la DB v3 fournie précédemment:
-      // CREATE TABLE notes (id ..., usrId, bookId, content, createdAt)
-      // Donc on mappe les champs de l'écran vers les colonnes de la DB.
       final noteForDb = {
         'usrId': userId,
-        'bookId': _selectedBook!.title, // On utilise le titre comme ID lisible ou l'ID réel si dispo
+        'bookId': _selectedBook!.title,
         'content': _noteController.text,
         'createdAt': "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
-        // Note: La table notes v3 n'a pas de colonne pageNumber ni bookTitle explicite à part bookId.
-        // On peut concaténer ou espérer que vous avez ajouté ces colonnes.
-        // Pour l'instant, je mets le titre dans bookId comme demandé implicitement.
       };
       
       await _dbHelper.insertNote(noteForDb);
@@ -128,7 +104,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Récupérer la liste des livres depuis le provider
     final myBooks = Provider.of<MyBooksProvider>(context).myBooks;
 
     return Scaffold(
@@ -163,41 +138,42 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
             const Text("Book Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 15),
             
-            // --- DROPDOWN POUR SÉLECTIONNER LE LIVRE ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<Book>(
-                  value: _selectedBook,
-                  hint: Row(
-                    children: const [
-                      Icon(Icons.book, color: Colors.black54),
-                      SizedBox(width: 10),
-                      Text("Select Book"),
-                    ],
+            // --- DROPDOWN MENU AVEC RECHERCHE (Material 3) ---
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return DropdownMenu<Book>(
+                  controller: _bookSearchController,
+                  width: constraints.maxWidth, // S'adapte à la largeur disponible
+                  enableFilter: true, // Active la recherche textuelle
+                  requestFocusOnTap: true, // Ouvre le clavier au clic pour chercher
+                  leadingIcon: const Icon(Icons.book, color: Colors.black54),
+                  label: const Text("Select Book"),
+                  inputDecorationTheme: InputDecorationTheme(
+                    filled: true,
+                    fillColor: const Color(0xFFF5F7FA),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                  items: myBooks.map((Book book) {
-                    return DropdownMenuItem<Book>(
+                  menuHeight: 300,
+                  dropdownMenuEntries: myBooks.map<DropdownMenuEntry<Book>>((Book book) {
+                    return DropdownMenuEntry<Book>(
                       value: book,
-                      child: Text(
-                        book.title,
-                        overflow: TextOverflow.ellipsis,
+                      label: book.title, // Ce texte sera utilisé pour le filtre
+                      style: MenuItemButton.styleFrom(
+                        foregroundColor: Colors.black87,
                       ),
                     );
                   }).toList(),
-                  onChanged: (Book? newValue) {
+                  onSelected: (Book? book) {
                     setState(() {
-                      _selectedBook = newValue;
+                      _selectedBook = book;
                     });
                   },
-                ),
-              ),
+                );
+              }
             ),
 
             const SizedBox(height: 15),

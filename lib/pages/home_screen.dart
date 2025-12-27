@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:smart_library/models/books_model.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
+import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/pages/book_datails_screen.dart';
 // import '../widgets/calender.dart'; // Décommentez si vous avez ce fichier
 
@@ -18,6 +19,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Charger les données dès l'affichage de l'écran d'accueil
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  void _loadData() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.currentUser?.usrId;
+
+    if (userId != null) {
+      // On déclenche le chargement des livres si ce n'est pas déjà fait ou pour rafraîchir
+      Provider.of<MyBooksProvider>(context, listen: false).fetchUserBooks(userId);
+      // On peut aussi précharger les favoris ici si on veut
+      Provider.of<FavoriteBooksProvider>(context, listen: false).fetchFavorites(userId);
+    }
+  }
 
   ImageProvider _buildBookImage(String thumbnail) {
     if (thumbnail.isEmpty) {
@@ -58,14 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final toReadCount = allBooks.where((b) => b.status == 'Not Read' || b.status == 'To Read').length;
     final totalCount = allBooks.length;
 
-    // Calcul du pourcentage de progression global (basé sur le nombre de livres finis vs total)
-    // Ou on pourrait calculer la moyenne des pages lues si on avait l'info précise
-    double progressPercent = totalCount > 0 ? (finishedCount / totalCount) : 0.0;
-    // On peut aussi ajouter un peu de poids pour les livres en cours
-    if (totalCount > 0) {
-      progressPercent += (readingCount * 0.5) / totalCount;
-    }
-    // Clamp to 1.0 max
+    // --- CALCUL OBJECTIF 300 PAGES ---
+    // Somme des pages lues pour tous les livres
+    // Note: Pour être précis "par mois", il faudrait filtrer sur l'historique de lecture avec des dates.
+    // Ici, on fait une simplification : on somme toutes les pages lues actuelles de tous les livres.
+    // Si vous voulez être précis "ce mois-ci", il faut une table reading_history plus complexe.
+    // Mais pour l'objectif simple demandé :
+    final int totalPagesRead = allBooks.fold(0, (sum, book) => sum + (book.pages ?? 0));
+    final int monthlyGoal = 300;
+    
+    // Pourcentage de l'objectif (max 1.0)
+    double progressPercent = totalPagesRead / monthlyGoal;
     if (progressPercent > 1.0) progressPercent = 1.0;
 
 
@@ -85,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
 
                 // --- A. CARTE PROGRESSION (Noire) ---
-                _buildProgressCard(progressPercent),
+                _buildProgressCard(progressPercent, totalPagesRead, monthlyGoal),
 
                 const SizedBox(height: 30),
 
@@ -298,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // --- WIDGET : CARTE NOIRE ---
-  Widget _buildProgressCard(double percent) {
+  Widget _buildProgressCard(double percent, int pagesRead, int goal) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -313,19 +338,33 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Keep going,\nyour progress is great!",
+                  "Monthly Goal",
                   style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "$pagesRead / $goal pages",
+                  style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      height: 1.3
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Keep reading to reach your goal!",
+                  style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                    // C'EST ICI QUE LA MAGIE OPÈRE :
-                    // On demande au parent (Layout) de changer l'onglet vers l'index 1 (My Books)
+                    // Redirige vers "My Books"
                     widget.onTabChange(1);
                   },
                   style: ElevatedButton.styleFrom(
@@ -334,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
-                  child: const Text("My Books", style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text("Continue Reading", style: TextStyle(fontWeight: FontWeight.bold)),
                 )
               ],
             ),

@@ -7,14 +7,28 @@ import 'package:smart_library/pages/setting.dart';
 import 'MyQuotesScreen.dart';
 
 class Layout extends StatefulWidget {
-  const Layout();
+  final int? id_page;
+
+  const Layout( {super.key, this.id_page});
+
+
 
   @override
   State<Layout> createState() => _LayoutState();
 }
 
 class _LayoutState extends State<Layout> {
-  int _currentIndex = 0;
+   int _currentIndex =  0 ;
+   @override
+   void initState() {
+     super.initState();
+
+     if (widget.id_page != null) {
+       _currentIndex = widget.id_page!;
+     }
+   }
+
+  // )
 
   // Fonction pour gérer la navigation
   void _onItemTapped(int index) {

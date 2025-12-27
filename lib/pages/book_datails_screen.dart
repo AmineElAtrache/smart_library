@@ -5,6 +5,9 @@ import 'package:smart_library/models/books_model.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
 
+import '../providers/favorites_provider.dart';
+import 'layout.dart';
+
 class BookDetailsScreen extends StatefulWidget {
   final Book? book; 
 
@@ -135,14 +138,20 @@ void _saveProgress() {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text("Modifier"),
+                title: const Text("Modify"),
                 onTap: () => Navigator.pop(context),
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text("Supprimer", style: TextStyle(color: Colors.red)),
-                onTap: () => Navigator.pop(context),
+                title: const Text("Delete", style: TextStyle(color: Colors.red)),
+                onTap: () async {
+                  final bookId = widget.book!.id;
+                  final userId = Provider.of<UserProvider>(context, listen: false).currentUser?.usrId;
+                  await Provider.of<FavoriteBooksProvider>(context, listen: false).removeFavorite(bookId);
+                  await Provider.of<MyBooksProvider>(context, listen: false).removeBook(bookId, userId!);
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Layout(id_page: 1)));
+                },
               ),
             ],
           ),

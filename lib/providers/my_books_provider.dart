@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
+import 'package:provider/provider.dart';
 import 'package:smart_library/auth/database_helper.dart';
 import 'package:smart_library/models/books_model.dart';
+
+import 'favorites_provider.dart';
 
 class MyBooksProvider with ChangeNotifier {
   List<Book> _myBooks = [];
@@ -24,38 +28,18 @@ class MyBooksProvider with ChangeNotifier {
   }
 
   // 2. DATABASE & MEMORY: Use this when clicking "Save"
-  // FIXED: Added userId as a parameter. Do not use 'context' here.
-// 2. DATABASE & MEMORY: Use this when clicking "Save"
   Future<void> savePageToDatabase(String bookId, int userId, int page) async {
-    // A. Update the Single Value (for the slider)
     _pagesCount = page;
 
-    // B. Update the List in Memory (CRITICAL STEP)
-    // We find the book and swap it with a new one containing the updated page count
     final index = _myBooks.indexWhere((b) => b.id == bookId);
     if (index != -1) {
       final oldBook = _myBooks[index];
-      // Create a copy of the book with the new page number
-      // NOTE: This assumes your Book model has a copyWith method or you reconstruct it.
-      // If you don't have copyWith, we recreate it manually:
-      final newBook = Book(
-        id: oldBook.id,
-        title: oldBook.title,
-        authors: oldBook.authors,
-        description: oldBook.description,
-        category: oldBook.category,
-        thumbnail: oldBook.thumbnail,
-        status: oldBook.status,
-        // UPDATE THE PAGE HERE
-        pages: page, 
-      );
-      
+      final newBook = oldBook.copyWith(pages: page);
       _myBooks[index] = newBook;
     }
     
-    notifyListeners(); // Update the UI
+    notifyListeners(); 
 
-    // C. Update Database permanently
     try {
       await _dbHelper.updatePageProgress(bookId, userId, page);
     } catch (e) {
@@ -96,6 +80,29 @@ class MyBooksProvider with ChangeNotifier {
     if (index < 0 || index >= _bookStates.length) return;
 
     _bookStates[index] = newStatus;
+    
+    // Si l'utilisateur marque le livre comme fini ("Finished")
+    if (newStatus == 'Finished') {
+      // On cherche le livre dans la liste mémoire
+      final bookIndex = _myBooks.indexWhere((b) => b.id == bookId);
+      if (bookIndex != -1) {
+        final book = _myBooks[bookIndex];
+        // On vérifie si on connait le nombre total de pages (totalPages > 0)
+        // et si la progression actuelle est inférieure au total.
+        if (book.totalPages > 0 && book.pages < book.totalPages) {
+          // On simule une progression jusqu'à la fin
+          // Cela va ajouter la différence dans 'daily_reading_log' via updatePageProgress
+          debugPrint("Auto-completing book: updating pages from ${book.pages} to ${book.totalPages}");
+          
+          // Mise à jour mémoire
+          _myBooks[bookIndex] = book.copyWith(pages: book.totalPages);
+          
+          // Mise à jour DB (cela déclenchera le log des pages "lues" aujourd'hui)
+          await _dbHelper.updatePageProgress(bookId, userId, book.totalPages);
+        }
+      }
+    }
+
     notifyListeners();
 
     await _dbHelper.updateBookState(bookId, userId, newStatus);
@@ -109,6 +116,8 @@ class MyBooksProvider with ChangeNotifier {
       if (index != -1) {
         _myBooks.removeAt(index);
         _bookStates.removeAt(index);
+
+
       }
       notifyListeners();
     } catch (e) {

@@ -72,24 +72,36 @@ class DatabaseHelper{
     )
    ''';
 
+   // New Table for tracking daily page progress
+   String daily_reading_log = '''
+    CREATE TABLE daily_reading_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usrId INTEGER,
+      bookId TEXT,
+      pagesRead INTEGER,
+      logDate TEXT,
+      FOREIGN KEY (usrId) REFERENCES users(usrId)
+    )
+   ''';
+
 
   //Create a connection to the database
   Future<Database> initDB ()async{
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, databaseName);
 
-    return openDatabase(path,version: 3 , 
+    return openDatabase(path,version: 4 , 
     onCreate: (db,version)async{
       await db.execute(user);
       await db.execute(favorites);
       await db.execute(mybooks);
       await db.execute(reading_history);
       await db.execute(notes);
+      await db.execute(daily_reading_log);
     },
     onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 3) {
            try {
-            // Migration for version 2 to 3 (adding columns to mybooks and favorites if needed, creating missing tables)
              await db.execute("ALTER TABLE favorites ADD COLUMN category TEXT DEFAULT 'General'");
              await db.execute("ALTER TABLE favorites ADD COLUMN status TEXT DEFAULT 'Not Read'");
              await db.execute("ALTER TABLE favorites ADD COLUMN pages INTEGER DEFAULT 0");
@@ -104,6 +116,13 @@ class DatabaseHelper{
              print("Migration error (ignored if columns exist): $e");
            }
         }
+        if (oldVersion < 4) {
+          try {
+            await db.execute(daily_reading_log);
+          } catch (e) {
+             print("Migration error v4: $e");
+          }
+        }
       },
     );
   }
@@ -113,7 +132,6 @@ class DatabaseHelper{
   //Authentication
   Future<bool> authenticate(Users usr)async{
     final Database db = await initDB();
-    // usrName was replaced by email in UserModel, updating query accordingly
     var result = await db.rawQuery("select * from users where email = '${usr.email}' AND usrPassword = '${usr.password}' ");
     if(result.isNotEmpty){
       return true;
@@ -249,8 +267,6 @@ Future<int> removeUserBook(String id, int usrId) async {
 
   Future<void> updateReadingHistory(String bookId, int usrId, String status) async {
      final Database db = await initDB();
-     // Simple implementation: insert a new record
-     // You might want to update an existing record if endDate is null instead
      await db.insert("reading_history", {
        "bookId": bookId,
        "usrId": usrId,
@@ -261,9 +277,51 @@ Future<int> removeUserBook(String id, int usrId) async {
 
   // === Progress & State Methods ===
 
-  Future<void> updatePageProgress(String bookId, int usrId, int page) async {
+  // Updated to track daily progress delta
+  Future<void> updatePageProgress(String bookId, int usrId, int newPage) async {
      final Database db = await initDB();
-     await db.update("mybooks", {"pages": page}, where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
+     
+     // 1. Get current pages to calculate delta
+     var res = await db.query("mybooks", columns: ['pages'], where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
+     int currentPages = 0;
+     if (res.isNotEmpty && res.first['pages'] != null) {
+       currentPages = res.first['pages'] as int;
+     }
+
+     int delta = newPage - currentPages;
+
+     // 2. Log if positive progress (we ignore rewinds for the monthly goal to avoid cheating? or allow corrections? 
+     // Let's assume positive progress counts towards goal. Correcting downwards doesn't remove from "effort" technically but for stats it might be tricky.
+     // For simplicity: log positive delta.)
+     if (delta > 0) {
+       await db.insert("daily_reading_log", {
+         "usrId": usrId,
+         "bookId": bookId,
+         "pagesRead": delta,
+         "logDate": DateTime.now().toIso8601String(),
+       });
+     }
+
+     await db.update("mybooks", {"pages": newPage}, where: "id = ? AND usrId = ?", whereArgs: [bookId, usrId]);
+  }
+  
+  // New method to get monthly progress
+  Future<int> getPagesReadThisMonth(int usrId) async {
+    final Database db = await initDB();
+    final now = DateTime.now();
+    // ISO8601 string sortable: yyyy-MM-01
+    final startOfMonth = DateTime(now.year, now.month, 1).toIso8601String();
+    
+    final result = await db.rawQuery('''
+      SELECT SUM(pagesRead) as total 
+      FROM daily_reading_log 
+      WHERE usrId = ? AND logDate >= ?
+    ''', [usrId, startOfMonth]);
+    
+    if (result.isNotEmpty && result.first['total'] != null) {
+      return result.first['total'] as int;
+    }
+    return 0;
   }
 
   Future<void> updateBookState(String bookId, int usrId, String status) async {
