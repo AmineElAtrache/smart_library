@@ -57,7 +57,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
 
   ImageProvider _buildBookImage(String thumbnail) {
     if (thumbnail.isEmpty) {
-      return const AssetImage('assets/images/test.jpg');
+      return const AssetImage('assets/images/empty.jpg');
     }
     if (thumbnail.startsWith('http')) {
       return NetworkImage(thumbnail);
@@ -117,14 +117,16 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      favoriteBooks.isEmpty? const SizedBox.shrink():
+                           Text(
                         'Your Favorites',
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-                      ),
-                      const SizedBox(height: 16),
-                      favoriteBooks.isEmpty ? _buildEmptyFavorites() : _buildFavoritesList(favoriteBooks),
-                      
-                      const SizedBox(height: 32),
+                      )
+                          , // <--- Ceci remplace null
+                      favoriteBooks.isEmpty ? SizedBox.shrink() : const SizedBox(height: 16),
+                      favoriteBooks.isEmpty ? SizedBox.shrink() : _buildFavoritesList(favoriteBooks),
+
+                      favoriteBooks.isEmpty ? SizedBox.shrink() : const SizedBox(height: 32),
                       
                       // --- SECTION CATÉGORIES DYNAMIQUE ---
                       const Text(
@@ -173,7 +175,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Recently Added',
+                            'my books',
                             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
                           ),
                           _buildFilterButton(allBooks),

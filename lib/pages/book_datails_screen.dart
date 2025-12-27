@@ -178,7 +178,7 @@ void _saveProgress() {
           ? NetworkImage(widget.book!.thumbnail)
           : FileImage(File(widget.book!.thumbnail)) as ImageProvider;
     } else {
-      imageProvider = const AssetImage('assets/images/placeholder.png');
+      imageProvider = const AssetImage('assets/images/empty.png');
     }
 
     return Scaffold(
