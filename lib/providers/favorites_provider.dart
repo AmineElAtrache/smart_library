@@ -5,19 +5,18 @@ import 'package:flutter/foundation.dart';
 class FavoriteBooksProvider with ChangeNotifier {
   int? _currentUserId;
   List<Book> _favorites = [];
-  bool _isLoading = false; // Start as false to avoid infinite spinners if no user
+  bool _isLoading = false; 
 
-  // Match the getter name used in MyBooksScreen
-  List<Book> get favoriteBooks => _favorites;
+  // Getter used in UI
+  List<Book> get favorites => _favorites;
+  List<Book> get favoriteBooks => _favorites; // Alias for compatibility
   bool get isLoading => _isLoading;
 
-  // Function to set user and immediately load their data
   void setCurrentUserId(int userId) {
     _currentUserId = userId;
     fetchFavorites(userId);
   }
 
-  // Renamed to fetchFavorites to match the call in MyBooksScreen
   Future<void> fetchFavorites(int userId) async {
     _isLoading = true;
     notifyListeners();
@@ -38,7 +37,6 @@ class FavoriteBooksProvider with ChangeNotifier {
     
     try {
       await DatabaseHelper().insertFavorite(book, _currentUserId!);
-      // Check if already in list to avoid duplicates in UI
       if (!_favorites.any((b) => b.id == book.id)) {
         _favorites.add(book);
       }
@@ -60,7 +58,6 @@ class FavoriteBooksProvider with ChangeNotifier {
     }
   }
 
-  // Check if a specific book is favorited (useful for the Heart icon color)
   bool isFavorite(String bookId) {
     return _favorites.any((book) => book.id == bookId);
   }

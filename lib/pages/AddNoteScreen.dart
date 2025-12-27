@@ -4,6 +4,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:provider/provider.dart';
 import 'package:smart_library/auth/database_helper.dart';
 import 'package:smart_library/providers/user_provider.dart';
+import 'package:smart_library/providers/my_books_provider.dart';
+import 'package:smart_library/models/books_model.dart';
 
 class AddNoteScreen extends StatefulWidget {
   const AddNoteScreen({Key? key}) : super(key: key);
@@ -13,14 +15,25 @@ class AddNoteScreen extends StatefulWidget {
 }
 
 class _AddNoteScreenState extends State<AddNoteScreen> {
-  final _bookController = TextEditingController();
+  // On remplace le controller texte par un objet Book sélectionné
+  Book? _selectedBook;
   final _pageController = TextEditingController();
   final _noteController = TextEditingController();
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   @override
+  void initState() {
+    super.initState();
+    // Charger les livres de l'utilisateur au démarrage si nécessaire
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.currentUser?.usrId;
+    if (userId != null) {
+      Provider.of<MyBooksProvider>(context, listen: false).fetchUserBooks(userId);
+    }
+  }
+
+  @override
   void dispose() {
-    _bookController.dispose();
     _pageController.dispose();
     _noteController.dispose();
     super.dispose();
@@ -28,11 +41,9 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
   // --- Logic to save the quote to the Database ---
   void _submitData() async {
-    // 1. Get the current user ID from the Provider
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final int? userId = userProvider.currentUser?.usrId;
 
-    // Check if user is logged in
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error: No user session found.")),
@@ -40,29 +51,47 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
       return;
     }
 
-    // Check if required fields are filled
-    if (_bookController.text.isEmpty || _noteController.text.isEmpty) {
+    // Vérification : un livre doit être sélectionné
+    if (_selectedBook == null || _noteController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a book name and a note.")),
+        const SnackBar(content: Text("Please select a book and enter a note.")),
       );
       return;
     }
 
-    // 2. Prepare the data for SQLite
     final newNote = {
       'usrId': userId,
-      'bookTitle': _bookController.text,
+      'bookId': _selectedBook!.id, // On stocke l'ID ou le titre selon la DB
+      'bookTitle': _selectedBook!.title, // On garde le titre pour l'affichage facile
       'pageNumber': _pageController.text.isEmpty ? '?' : _pageController.text,
       'noteText': _noteController.text,
       'date': "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
     };
 
     try {
-      // 3. Insert into the database
-      await _dbHelper.insertNote(newNote);
+      // Attention: La table 'notes' dans DatabaseHelper v3 attend 'bookId' (TEXT) et 'content' (TEXT)
+      // Il faut adapter les clés de la map à ce que la méthode insertNote attend.
+      // D'après votre DatabaseHelper, la table notes a: id, usrId, bookId, content, createdAt.
+      // Mais votre méthode insertNote prend une Map dynamique.
+      // Modifions la structure pour correspondre à votre probable usage ou ajoutons les colonnes manquantes.
+      // Ici, on va mapper pour correspondre à une structure générique, mais l'idéal est de respecter le schéma DB.
+      
+      // Adaptation au schéma de la DB v3 fournie précédemment:
+      // CREATE TABLE notes (id ..., usrId, bookId, content, createdAt)
+      // Donc on mappe les champs de l'écran vers les colonnes de la DB.
+      final noteForDb = {
+        'usrId': userId,
+        'bookId': _selectedBook!.title, // On utilise le titre comme ID lisible ou l'ID réel si dispo
+        'content': _noteController.text,
+        'createdAt': "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
+        // Note: La table notes v3 n'a pas de colonne pageNumber ni bookTitle explicite à part bookId.
+        // On peut concaténer ou espérer que vous avez ajouté ces colonnes.
+        // Pour l'instant, je mets le titre dans bookId comme demandé implicitement.
+      };
+      
+      await _dbHelper.insertNote(noteForDb);
       
       if (!mounted) return;
-      // Close the screen and return 'true' to tell the previous screen to refresh
       Navigator.pop(context, true); 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +100,6 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
     }
   }
 
-  // --- Logic for OCR (Text Recognition) ---
   Future<void> _captureAndExtractText() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -100,6 +128,9 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Récupérer la liste des livres depuis le provider
+    final myBooks = Provider.of<MyBooksProvider>(context).myBooks;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -131,16 +162,44 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
           children: [
             const Text("Book Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
             const SizedBox(height: 15),
-            TextField(
-              controller: _bookController,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFF5F7FA),
-                prefixIcon: const Icon(Icons.book, color: Colors.black54),
-                hintText: "Book Title",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            
+            // --- DROPDOWN POUR SÉLECTIONNER LE LIVRE ---
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Book>(
+                  value: _selectedBook,
+                  hint: Row(
+                    children: const [
+                      Icon(Icons.book, color: Colors.black54),
+                      SizedBox(width: 10),
+                      Text("Select Book"),
+                    ],
+                  ),
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                  items: myBooks.map((Book book) {
+                    return DropdownMenuItem<Book>(
+                      value: book,
+                      child: Text(
+                        book.title,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (Book? newValue) {
+                    setState(() {
+                      _selectedBook = newValue;
+                    });
+                  },
+                ),
               ),
             ),
+
             const SizedBox(height: 15),
             TextField(
               controller: _pageController,

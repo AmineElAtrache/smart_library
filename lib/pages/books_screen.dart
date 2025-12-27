@@ -17,6 +17,7 @@ class MyBooksScreen extends StatefulWidget {
 class _MyBooksScreenState extends State<MyBooksScreen> {
   String _selectedStatus = 'All';
   String _selectedAuthor = 'All';
+  String _selectedCategory = 'All'; // Variable pour la catégorie sélectionnée
 
   @override
   void initState() {
@@ -36,9 +37,22 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     }
   }
 
+  // Récupérer les auteurs uniques
   List<String> getUniqueAuthors(List<Book> books) {
     final authors = books.expand((book) => book.authors).map((a) => a.toString()).toSet().toList();
     return ['All', ...authors];
+  }
+
+  // Récupérer les catégories uniques depuis la liste des livres
+  List<String> getUniqueCategories(List<Book> books) {
+    // On suppose que le modèle Book a un champ 'category'.
+    // Si la catégorie est vide ou null, on peut la mettre dans "General" ou l'ignorer.
+    final categories = books
+        .map((book) => book.category.isNotEmpty ? book.category : 'General')
+        .toSet()
+        .toList();
+    categories.sort(); // Tri alphabétique
+    return ['All', ...categories];
   }
 
   ImageProvider _buildBookImage(String thumbnail) {
@@ -51,23 +65,10 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     return FileImage(File(thumbnail));
   }
 
-  // --- NAVIGATION HELPER ---
   void _navigateToDetails(Book book) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
     final myBooksProvider = Provider.of<MyBooksProvider>(context, listen: false);
     
-    final userId = userProvider.currentUser?.usrId;
-
-    if (userId != null) {
-      // Optional history logic here
-    }
-
     if (!mounted) return;
-
-    // --- CRITICAL FIX ---
-    // We load the SAVED PROGRESS (currentPage), not the TOTAL length (pages).
-    // This ensures the slider starts where you left off.
-    // Default to 0 if null.
     myBooksProvider.loadPagesCounter(book.pages ?? 0);
 
     Navigator.push(
@@ -83,15 +84,25 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     final myBooksProvider = Provider.of<MyBooksProvider>(context);
     final favProvider = Provider.of<FavoriteBooksProvider>(context);
 
-    // Using reversed to show newest added books first
     final allBooks = myBooksProvider.myBooks.reversed.toList();
     final favoriteBooks = favProvider.favoriteBooks;
     final isLoading = myBooksProvider.isLoading || favProvider.isLoading;
 
+    // --- LOGIQUE DE FILTRAGE ---
     List<Book> filteredBooks = allBooks;
+
+    // 1. Filtrer par Auteur
     if (_selectedAuthor != 'All') {
       filteredBooks = filteredBooks.where((book) => book.authors.contains(_selectedAuthor)).toList();
     }
+
+    // 2. Filtrer par Catégorie
+    if (_selectedCategory != 'All') {
+      filteredBooks = filteredBooks.where((book) => book.category == _selectedCategory).toList();
+    }
+
+    // Récupération dynamique des catégories
+    final uniqueCategories = getUniqueCategories(allBooks);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -112,14 +123,52 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       ),
                       const SizedBox(height: 16),
                       favoriteBooks.isEmpty ? _buildEmptyFavorites() : _buildFavoritesList(favoriteBooks),
+                      
                       const SizedBox(height: 32),
+                      
+                      // --- SECTION CATÉGORIES DYNAMIQUE ---
                       const Text(
                         'Categories',
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
                       ),
                       const SizedBox(height: 16),
-                      _buildCategoriesList(),
+                      SizedBox(
+                        height: 44,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: uniqueCategories.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final category = uniqueCategories[index];
+                            final isSelected = category == _selectedCategory;
+                            
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = category;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF1F2937) : Colors.grey.shade200,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
                       const SizedBox(height: 32),
+                      
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -130,15 +179,32 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                           _buildFilterButton(allBooks),
                         ],
                       ),
+                      
+                      // Affichage des filtres actifs (Feedback visuel)
+                      if (_selectedCategory != 'All' || _selectedAuthor != 'All')
+                         Padding(
+                           padding: const EdgeInsets.only(top: 8.0),
+                           child: Text(
+                             "Filtered by: ${_selectedCategory != 'All' ? 'Category: $_selectedCategory' : ''} ${_selectedAuthor != 'All' ? 'Author: $_selectedAuthor' : ''}",
+                             style: const TextStyle(color: Color(0xFF4F46E5), fontSize: 12),
+                           ),
+                         ),
+
                       const SizedBox(height: 16),
+                      
                       filteredBooks.isEmpty
-                          ? const Center(child: Text("No books found."))
+                          ? const Center(child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: Text("No books match your filters."),
+                            ))
                           : ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: filteredBooks.length,
                               itemBuilder: (context, index) {
-                                return _buildBookListTile(filteredBooks[index]);
+                                final book = filteredBooks[index];
+                                final isFavorite = favProvider.favorites.any((b) => b.id == book.id);
+                                return _buildBookListTile(book, isFavorite, context);
                               },
                             ),
                     ],
@@ -181,7 +247,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     );
   }
 
-  Widget _buildBookListTile(Book book) {
+  Widget _buildBookListTile(Book book, bool isFavorite, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GestureDetector(
@@ -215,6 +281,27 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                 ],
               ),
             ),
+            IconButton(
+              onPressed: () {
+                final favProvider = Provider.of<FavoriteBooksProvider>(context, listen: false);
+                if (isFavorite) {
+                  favProvider.removeFavorite(book.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${book.title} removed from favorites')),
+                  );
+                } else {
+                  favProvider.addFavorite(book);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${book.title} added to favorites')),
+                  );
+                }
+              },
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border, 
+                color: const Color(0xFFFF4757),
+                size: 24,
+              ),
+            ),
           ],
         ),
       ),
@@ -241,26 +328,9 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     );
   }
 
-  Widget _buildCategoriesList() {
-    final List<String> categories = ['Short Stories', 'Science Fiction', 'Action', 'Romance', 'Fantasy'];
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(color: const Color(0xFF1F2937), borderRadius: BorderRadius.circular(24)),
-            child: Text(categories[index],
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-          );
-        },
-      ),
-    );
-  }
-
+  // Cette méthode n'est plus utilisée directement car la liste est maintenant dynamique dans le build
+  // Mais on peut la garder ou la supprimer. J'ai intégré le code directement dans le build pour plus de clarté.
+  
   Widget _buildFilterButton(List<Book> allBooks) {
     return Container(
       height: 40,

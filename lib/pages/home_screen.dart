@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_library/models/books_model.dart';
+import 'package:smart_library/providers/my_books_provider.dart';
+import 'package:smart_library/providers/favorites_provider.dart';
+import 'package:smart_library/pages/book_datails_screen.dart';
 // import '../widgets/calender.dart'; // Décommentez si vous avez ce fichier
 
 class HomeScreen extends StatefulWidget {
@@ -13,8 +18,57 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+  ImageProvider _buildBookImage(String thumbnail) {
+    if (thumbnail.isEmpty) {
+      return const AssetImage('assets/images/test.jpg');
+    }
+    if (thumbnail.startsWith('http')) {
+      return NetworkImage(thumbnail);
+    }
+    // Pour les images locales ou fichiers, ajustez selon votre logique
+    // Ici on suppose que c'est une URL ou un asset par défaut pour simplifier,
+    // mais si vous gérez des fichiers locaux :
+    // return FileImage(File(thumbnail));
+    return const AssetImage('assets/images/test.jpg');
+  }
+
+  void _navigateToDetails(Book book) {
+    // Naviguer vers les détails du livre
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BookDetailsScreen(book: book),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Récupérer les livres depuis le provider
+    final myBooksProvider = Provider.of<MyBooksProvider>(context);
+    final allBooks = myBooksProvider.myBooks;
+    
+    // On inverse pour avoir les plus récents en premier, comme dans MyBooksScreen
+    final recentBooks = allBooks.reversed.take(3).toList();
+
+    // Calcul des statistiques réelles
+    final finishedCount = allBooks.where((b) => b.status == 'Finished').length;
+    final readingCount = allBooks.where((b) => b.status == 'Reading').length;
+    final toReadCount = allBooks.where((b) => b.status == 'Not Read' || b.status == 'To Read').length;
+    final totalCount = allBooks.length;
+
+    // Calcul du pourcentage de progression global (basé sur le nombre de livres finis vs total)
+    // Ou on pourrait calculer la moyenne des pages lues si on avait l'info précise
+    double progressPercent = totalCount > 0 ? (finishedCount / totalCount) : 0.0;
+    // On peut aussi ajouter un peu de poids pour les livres en cours
+    if (totalCount > 0) {
+      progressPercent += (readingCount * 0.5) / totalCount;
+    }
+    // Clamp to 1.0 max
+    if (progressPercent > 1.0) progressPercent = 1.0;
+
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
 
                 // --- A. CARTE PROGRESSION (Noire) ---
-                _buildProgressCard(),
+                _buildProgressCard(progressPercent),
 
                 const SizedBox(height: 30),
 
@@ -45,14 +99,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 15),
 
                 // 1. Pie Chart (Statut de lecture)
-                const ReadingStatusChart(),
+                ReadingStatusChart(
+                  finished: finishedCount,
+                  reading: readingCount,
+                  toRead: toReadCount,
+                ),
                 const SizedBox(height: 15),
 
                 // 2. Bar Chart (Catégories)
-                const CategoryBarChart(),
+                CategoryBarChart(books: allBooks),
                 const SizedBox(height: 15),
 
-                // 3. Line Chart (Progression mensuelle)
+                // 3. Line Chart (Progression mensuelle) - Placeholder pour l'instant car requiert historique complexe
                 const MonthlyProgressChart(),
 
                 const SizedBox(height: 30),
@@ -84,20 +142,60 @@ class _HomeScreenState extends State<HomeScreen> {
                 // --- CARTES CATÉGORIES (Thème Gris/Noir) ---
                 Row(
                   children: [
-                    Expanded(child: _buildCategoryCard("Total Books", "25 Books", Icons.collections_bookmark_outlined)),
+                    Expanded(child: _buildCategoryCard("Total Books", "$totalCount Books", Icons.collections_bookmark_outlined)),
                     const SizedBox(width: 16),
-                    Expanded(child: _buildCategoryCard("Finished", "12 Books", Icons.done_all)),
+                    Expanded(child: _buildCategoryCard("Finished", "$finishedCount Books", Icons.done_all)), 
                   ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _buildCategoryCard("Reading", "3 Books", Icons.menu_book)),
+                    Expanded(child: _buildCategoryCard("Reading", "$readingCount Books", Icons.menu_book)), 
                     const SizedBox(width: 16),
-                    Expanded(child: _buildCategoryCard("To Read", "10 Books", Icons.bookmark_border)),
+                    Expanded(child: _buildCategoryCard("To Read", "$toReadCount Books", Icons.bookmark_border)), 
                   ],
                 ),
 
+                const SizedBox(height: 40),
+
+                // --- D. RECENTLY ADDED (Nouveau) ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Recently Added",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                     IconButton(
+                      icon: const Icon(Icons.tune),
+                      onPressed: () {
+                         // Action filtre ou navigation vers My Books
+                         widget.onTabChange(1);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                if (recentBooks.isEmpty)
+                  const Text("No books added recently.")
+                else
+                  Consumer<FavoriteBooksProvider>(
+                    builder: (context, favoritesProvider, child) {
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: recentBooks.length,
+                        itemBuilder: (context, index) {
+                          final book = recentBooks[index];
+                          // Vérifier si le livre est déjà dans les favoris
+                          final isFavorite = favoritesProvider.favorites.any((b) => b.id == book.id);
+                          return _buildRecentBookItem(context, book, isFavorite);
+                        },
+                      );
+                    },
+                  ),
+                  
                 const SizedBox(height: 40),
               ],
             ),
@@ -107,8 +205,100 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildRecentBookItem(BuildContext context, Book book, bool isFavorite) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: GestureDetector(
+        onTap: () => _navigateToDetails(book),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 120,
+              width: 80,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: _buildBookImage(book.thumbnail),
+                    fit: BoxFit.cover,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                    ),
+                  ]),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111827),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    book.authors.join(', '),
+                    style: const TextStyle(
+                      color: Color(0xFF4F46E5),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    book.description,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.blueGrey.shade400,
+                      height: 1.4,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // --- BOUTON FAVORIS ---
+            IconButton(
+              onPressed: () {
+                final provider = Provider.of<FavoriteBooksProvider>(context, listen: false);
+                if (isFavorite) {
+                   provider.removeFavorite(book.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${book.title} removed from favorites')),
+                    );
+                } else {
+                   provider.addFavorite(book);
+                   ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${book.title} added to favorites')),
+                   );
+                }
+              },
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: const Color(0xFFFF4757),
+                size: 24,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // --- WIDGET : CARTE NOIRE ---
-  Widget _buildProgressCard() {
+  Widget _buildProgressCard(double percent) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -156,14 +346,14 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 width: 80, height: 80,
                 child: CircularProgressIndicator(
-                  value: 0.63,
+                  value: percent,
                   strokeWidth: 8,
                   backgroundColor: Colors.white.withOpacity(0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   strokeCap: StrokeCap.round,
                 ),
               ),
-              const Text("63%", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("${(percent * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
             ],
           )
         ],
@@ -203,10 +393,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // --- 1. PIE CHART : STATUT ---
 class ReadingStatusChart extends StatelessWidget {
-  const ReadingStatusChart({super.key});
+  final int finished;
+  final int reading;
+  final int toRead;
+
+  const ReadingStatusChart({super.key, required this.finished, required this.reading, required this.toRead});
 
   @override
   Widget build(BuildContext context) {
+    // Si tout est à zéro, on affiche un graphique vide ou par défaut
+    bool isEmpty = (finished == 0 && reading == 0 && toRead == 0);
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -223,14 +420,19 @@ class ReadingStatusChart extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: PieChart(
+                  child: isEmpty 
+                  ? Center(child: Text("No data yet", style: TextStyle(color: Colors.grey)))
+                  : PieChart(
                     PieChartData(
                       sectionsSpace: 0,
                       centerSpaceRadius: 30,
                       sections: [
-                        PieChartSectionData(value: 12, color: Colors.black, radius: 25, showTitle: false),
-                        PieChartSectionData(value: 3, color: Colors.grey.shade600, radius: 25, showTitle: false),
-                        PieChartSectionData(value: 10, color: Colors.grey.shade300, radius: 25, showTitle: false),
+                        if (finished > 0)
+                        PieChartSectionData(value: finished.toDouble(), color: Colors.black, radius: 25, showTitle: false),
+                        if (reading > 0)
+                        PieChartSectionData(value: reading.toDouble(), color: Colors.grey.shade600, radius: 25, showTitle: false),
+                        if (toRead > 0)
+                        PieChartSectionData(value: toRead.toDouble(), color: Colors.grey.shade300, radius: 25, showTitle: false),
                       ],
                     ),
                   ),
@@ -239,9 +441,9 @@ class ReadingStatusChart extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLegendItem(Colors.black, "Finished (12)"),
-                    _buildLegendItem(Colors.grey.shade600, "Reading (3)"),
-                    _buildLegendItem(Colors.grey.shade300, "To Read (10)"),
+                    _buildLegendItem(Colors.black, "Finished ($finished)"),
+                    _buildLegendItem(Colors.grey.shade600, "Reading ($reading)"),
+                    _buildLegendItem(Colors.grey.shade300, "To Read ($toRead)"),
                   ],
                 )
               ],
@@ -268,10 +470,30 @@ class ReadingStatusChart extends StatelessWidget {
 
 // --- 2. BAR CHART : CATÉGORIES ---
 class CategoryBarChart extends StatelessWidget {
-  const CategoryBarChart({super.key});
+  final List<Book> books;
+  const CategoryBarChart({super.key, required this.books});
 
   @override
   Widget build(BuildContext context) {
+    // Compter les catégories
+    Map<String, int> counts = {};
+    for (var book in books) {
+      String cat = (book.category.isEmpty) ? "General" : book.category;
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    
+    // Prendre le top 5
+    var sortedKeys = counts.keys.toList()..sort((a,b) => counts[b]!.compareTo(counts[a]!));
+    var top5 = sortedKeys.take(5).toList();
+
+    if (top5.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(20)),
+          child: const Center(child: Text("No category data yet")),
+        );
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -297,28 +519,21 @@ class CategoryBarChart extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
+                        int index = value.toInt();
+                        if (index < 0 || index >= top5.length) return const SizedBox();
+                        String text = top5[index];
+                        // Shorten text
+                        if (text.length > 4) text = text.substring(0, 3);
+                        
                         const style = TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 10);
-                        String text;
-                        switch (value.toInt()) {
-                          case 0: text = 'Thril'; break;
-                          case 1: text = 'Rom'; break;
-                          case 2: text = 'Sci'; break;
-                          case 3: text = 'Dra'; break;
-                          case 4: text = 'His'; break;
-                          default: text = '';
-                        }
                         return SideTitleWidget(meta: meta, child: Text(text, style: style));
                       },
                     ),
                   ),
                 ),
-                barGroups: [
-                  _makeBarData(0, 8),
-                  _makeBarData(1, 10),
-                  _makeBarData(2, 4),
-                  _makeBarData(3, 6),
-                  _makeBarData(4, 3),
-                ],
+                barGroups: List.generate(top5.length, (index) {
+                   return _makeBarData(index, counts[top5[index]]!.toDouble());
+                }),
               ),
             ),
           ),
