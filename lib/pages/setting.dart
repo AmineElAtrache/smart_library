@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_library/auth/auth.dart';
@@ -110,6 +111,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final userProvider = Provider.of<UserProvider>(context);
+        final user = userProvider.currentUser;
+        
         return GestureDetector(
           onTap: () async {
             final result = await Navigator.push(
@@ -135,8 +139,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: AppThemes.borderColor, width: 2),
-                    image: const DecorationImage(
-                      image: AssetImage('assets/images/userlogo.png'),
+                    image: DecorationImage(
+                      image: _getProfileImage(user?.profilePicture),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -291,5 +295,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  // Helper method to get profile image
+  ImageProvider<Object> _getProfileImage(String? profilePicturePath) {
+    if (profilePicturePath != null && profilePicturePath.isNotEmpty) {
+      final file = File(profilePicturePath);
+      if (file.existsSync()) {
+        return FileImage(file);
+      }
+    }
+    return const AssetImage('assets/images/userlogo.png');
   }
 }

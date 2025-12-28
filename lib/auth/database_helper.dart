@@ -93,7 +93,7 @@ class DatabaseHelper{
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, databaseName);
 
-    return openDatabase(path, version: 11, 
+    return openDatabase(path, version: 12, 
     onCreate: (db,version)async{
       await db.execute(user);
       await db.execute(mybooks);
@@ -193,6 +193,7 @@ class DatabaseHelper{
         "fullName": usr.fullName,
         "email": usr.email,
         "usrPassword": usr.password,
+        "profilePicture": usr.profilePicture,
       },
       where: "usrId = ?",
       whereArgs: [usr.usrId],

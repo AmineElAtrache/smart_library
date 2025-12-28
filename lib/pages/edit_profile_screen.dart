@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_library/auth/database_helper.dart';
 import 'package:smart_library/models/user_model.dart';
@@ -35,6 +36,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emailController = TextEditingController(text: user?.email ?? '');
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
+    
+    // Initialize _selectedImage with current profile picture if it exists
+    if (user?.profilePicture != null && user!.profilePicture!.isNotEmpty) {
+      final file = File(user.profilePicture!);
+      if (file.existsSync()) {
+        _selectedImage = file;
+      }
+    }
   }
 
   @override
@@ -102,11 +111,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         newPassword = _passwordController.text;
       }
 
+      // Handle profile picture
+      String? profilePicturePath = currentUser.profilePicture;
+      if (_selectedImage is File && _selectedImage.path != currentUser.profilePicture) {
+        try {
+          final appDir = await getApplicationDocumentsDirectory();
+          final profileDir = Directory('${appDir.path}/profile_pictures');
+          if (!profileDir.existsSync()) {
+            profileDir.createSync(recursive: true);
+          }
+          
+          final fileName = 'profile_${currentUser.usrId}.png';
+          final savedImage = await _selectedImage.copy('${profileDir.path}/$fileName');
+          profilePicturePath = savedImage.path;
+        } catch (e) {
+          _showSnackBar('Error saving profile picture: ${e.toString()}', Colors.orange);
+        }
+      }
+
       final updatedUser = Users(
         usrId: currentUser.usrId,
         fullName: _nameController.text,
         email: _emailController.text,
         password: newPassword,
+        profilePicture: profilePicturePath,
       );
 
       // Update user in database
