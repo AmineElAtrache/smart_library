@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_library/providers/history_provider.dart';
 import 'package:smart_library/providers/user_provider.dart';
+import 'package:smart_library/theme/app_themes.dart';
 import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -41,30 +42,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final historyProvider = Provider.of<HistoryProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, color: isDark ? Colors.white : Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Reading History",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
       body: historyProvider.isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.black))
+          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
           : RefreshIndicator(
-              color: Colors.black,
+              color: Colors.blue,
               onRefresh: _loadHistory, // Allows pulling down to refresh data
               child: historyProvider.history.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(isDark)
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                       // Ensure the list is always scrollable for RefreshIndicator to work
@@ -74,14 +76,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         // Display newest items at the top
                         final item = historyProvider.history[historyProvider.history.length - 1 - index];
                         bool isLast = index == historyProvider.history.length - 1;
-                        return _buildHistoryItem(item, isLast);
+                        return _buildHistoryItem(item, isLast, isDark);
                       },
                     ),
             ),
     );
   }
 
-  Widget _buildHistoryItem(Map<String, dynamic> item, bool isLast) {
+  Widget _buildHistoryItem(Map<String, dynamic> item, bool isLast, bool isDark) {
     // Determine status safely
     String status = item['status'] ?? 'Not Read';
     bool isFinished = status == 'Finished';
@@ -102,9 +104,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: isFinished ? Colors.green : (status == 'Reading' ? Colors.black : Colors.blue),
+                  color: isFinished ? Colors.green : (status == 'Reading' ? (isDark ? AppThemes.accentColor : Colors.black) : Colors.blue),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: isDark ? AppThemes.darkBg : Colors.white, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -118,7 +120,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: Colors.grey.shade200,
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
                   ),
                 ),
             ],
@@ -135,7 +137,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Text(
                     dateLabel,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -144,9 +146,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
+                      color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade100),
+                      border: Border.all(color: isDark ? AppThemes.borderColor : Colors.grey.shade100),
                     ),
                     child: Row(
                       children: [
@@ -160,14 +162,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 item['title'] ?? 'Unknown Title',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: Color(0xFF1F2937),
+                                  color: isDark ? Colors.white : const Color(0xFF1F2937),
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              _buildStatusBadge(status),
+                              _buildStatusBadge(status, isDark),
                               
                               // Show Finished Date only if valid
                               if (isFinished) ...[
@@ -229,20 +231,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(String status, bool isDark) {
     Color color;
     if (status == 'Finished') {
       color = Colors.green;
     } else if (status == 'Reading') {
-      color = Colors.black; 
+      color = isDark ? AppThemes.accentColor : Colors.black; 
     } else {
-      color = Colors.grey;
+      color = isDark ? Colors.grey.shade500 : Colors.grey;
     }
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(isDark ? 0.2 : 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -256,7 +258,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return ListView( // Use ListView to allow RefreshIndicator to work on empty state
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
@@ -265,16 +267,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_stories_outlined, size: 80, color: Colors.grey.shade300),
+              Icon(Icons.auto_stories_outlined, size: 80, color: isDark ? Colors.grey.shade600 : Colors.grey.shade300),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 "No reading history yet",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade300 : Colors.grey),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "Tap on a book in your library to start.",
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey),
               ),
             ],
           ),

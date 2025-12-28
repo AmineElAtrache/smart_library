@@ -9,6 +9,7 @@ import 'package:smart_library/models/books_model.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
+import 'package:smart_library/theme/app_themes.dart';
 
 import 'layout.dart';
 
@@ -172,13 +173,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
       appBar: AppBar(
-        title: const Text("Add a Book", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text("Add a Book", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
         elevation: 0, centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -194,15 +197,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.black,
+                    color: isDark ? AppThemes.accentColor : Colors.black,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.qr_code_scanner, color: Colors.white),
-                      SizedBox(width: 12),
-                      Text("Scan ISBN Code", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    children: [
+                      Icon(Icons.qr_code_scanner, color: isDark ? Colors.black : Colors.white),
+                      const SizedBox(width: 12),
+                      Text("Scan ISBN Code", style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -216,25 +219,25 @@ class _AddBookScreenState extends State<AddBookScreen> {
                   child: Container(
                     height: 180, width: 120,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
+                      color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: isDark ? AppThemes.borderColor : Colors.grey.shade300),
                       image: _selectedImage != null ? _buildDecorationImage() : null,
                     ),
                     child: _selectedImage == null 
-                        ? const Icon(Icons.add_a_photo, color: Colors.grey, size: 40) 
+                        ? Icon(Icons.add_a_photo, color: isDark ? Colors.grey.shade600 : Colors.grey, size: 40) 
                         : null,
                   ),
                 ),
               ),
               
               const SizedBox(height: 25),
-              _buildLabel("Book Title"),
-              _buildTextField(_titleController, "Title", Icons.book),
+              _buildLabel("Book Title", isDark),
+              _buildTextField(_titleController, "Title", Icons.book, isDark),
               
               const SizedBox(height: 15),
-              _buildLabel("Author"),
-              _buildTextField(_authorController, "Author(s)", Icons.person_outline),
+              _buildLabel("Author", isDark),
+              _buildTextField(_authorController, "Author(s)", Icons.person_outline, isDark),
               
               const SizedBox(height: 15),
               // 4. ADDED: Modified Row to include Pages
@@ -245,8 +248,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start, 
                       children: [
-                        _buildLabel("Category"),
-                        _buildTextField(_categoryController, "Category", Icons.category_outlined),
+                        _buildLabel("Category", isDark),
+                        _buildTextField(_categoryController, "Category", Icons.category_outlined, isDark),
                       ]
                     )
                   ),
@@ -256,8 +259,8 @@ class _AddBookScreenState extends State<AddBookScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start, 
                       children: [
-                        _buildLabel("Year"),
-                        _buildTextField(_yearController, "Year", Icons.calendar_today, isNumber: true),
+                        _buildLabel("Year", isDark),
+                        _buildTextField(_yearController, "Year", Icons.calendar_today, isDark, isNumber: true),
                       ]
                     )
                   ),
@@ -265,17 +268,18 @@ class _AddBookScreenState extends State<AddBookScreen> {
               ),
               
               const SizedBox(height: 15),
-              _buildLabel("Description"),
-              _buildTextField(_noteController, "Description...", Icons.notes, maxLines: 3, isRequired: false),
+              _buildLabel("Description", isDark),
+              _buildTextField(_noteController, "Description...", Icons.notes, isDark, maxLines: 3, isRequired: false),
 
               const SizedBox(height: 15),
               // --- Added: Page Number Field ---
               // This field allows the user to manually input the page number if it is not fetched automatically.
-              _buildLabel("Page Number"),
+              _buildLabel("Page Number", isDark),
               _buildTextField(
                 _pagesController,
                 "Enter page number",
                 Icons.format_list_numbered,
+                isDark,
                 isNumber: true,
                 isRequired: false, // Optional field
               ),
@@ -283,9 +287,9 @@ class _AddBookScreenState extends State<AddBookScreen> {
               const SizedBox(height: 20),
               SwitchListTile(
                 value: _isFavorite,
-                activeColor: Colors.black,
+                activeColor: isDark ? AppThemes.accentColor : Colors.black,
                 onChanged: (v) => setState(() => _isFavorite = v),
-                title: const Text("Mark as Favorite"),
+                title: Text("Mark as Favorite", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
               ),
               
               const SizedBox(height: 30),
@@ -293,8 +297,11 @@ class _AddBookScreenState extends State<AddBookScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _saveBook,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black, padding: const EdgeInsets.all(16)),
-                  child: const Text("SAVE BOOK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? AppThemes.accentColor : Colors.black, 
+                    padding: const EdgeInsets.all(16),
+                  ),
+                  child: Text("SAVE BOOK", style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -313,23 +320,25 @@ class _AddBookScreenState extends State<AddBookScreen> {
     }
   }
 
-  Widget _buildLabel(String text) => Padding(
+  Widget _buildLabel(String text, bool isDark) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+    child: Text(text, style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
   );
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, {bool isNumber = false, int maxLines = 1, bool isRequired = true}) {
+  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, bool isDark, {bool isNumber = false, int maxLines = 1, bool isRequired = true}) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       validator: (v) => isRequired && (v == null || v.isEmpty) ? "Required" : null,
+      style: TextStyle(color: isDark ? Colors.white : Colors.black),
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, size: 20),
+        prefixIcon: Icon(icon, size: 20, color: isDark ? AppThemes.accentColor : Colors.black54),
         hintText: hint,
+        hintStyle: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade500),
         contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-        filled: true, fillColor: const Color(0xFFF5F7FA),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        filled: true, fillColor: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: isDark ? BorderSide(color: AppThemes.borderColor) : BorderSide.none),
       ),
     );
   }
@@ -341,8 +350,16 @@ class BarcodeScannerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan ISBN")),
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
+      appBar: AppBar(
+        title: Text("Scan ISBN", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+        backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
+        elevation: 0,
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
+      ),
       body: MobileScanner(
         onDetect: (capture) {
           final barcode = capture.barcodes.first;
