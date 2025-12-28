@@ -31,10 +31,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       // Allow scrolling when the keyboard appears
       resizeToAvoidBottomInset: true, 
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF0F0F0F) : Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(24.0, 80.0, 24.0, 0),
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     'Login to your\naccount',
-                    style: heading2.copyWith(color: textBlack),
+                    style: heading2.copyWith(color: isDarkMode ? Colors.white : textBlack),
                   ),
                   SizedBox(height: 20),
                   Image.asset(
@@ -197,9 +198,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF0F0F0F) : Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24.0, 40.0, 24.0, 0),
@@ -211,7 +213,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   Text(
                     'Register new\naccount',
-                    style: heading2.copyWith(color: textBlack),
+                    style: heading2.copyWith(color: isDarkMode ? Colors.white : textBlack),
                   ),
                   const SizedBox(height: 20),
                   Image.asset(

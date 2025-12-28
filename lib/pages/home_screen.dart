@@ -6,6 +6,7 @@ import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/pages/book_datails_screen.dart';
+import 'package:smart_library/theme/app_themes.dart';
 // import '../widgets/calender.dart'; // Décommentez si vous avez ce fichier
 
 class HomeScreen extends StatefulWidget {
@@ -86,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Ici, on fait une simplification : on somme toutes les pages lues actuelles de tous les livres.
     // Si vous voulez être précis "ce mois-ci", il faut une table reading_history plus complexe.
     // Mais pour l'objectif simple demandé :
-    final int totalPagesRead = allBooks.fold(0, (sum, book) => sum + (book.pages ?? 0));
+    final int totalPagesRead = allBooks.fold(0, (sum, book) => sum + (book.pages));
     final int monthlyGoal = 300;
     
     // Pourcentage de l'objectif (max 1.0)
@@ -440,19 +441,21 @@ class ReadingStatusChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     // Si tout est à zéro, on affiche un graphique vide ou par défaut
     bool isEmpty = (finished == 0 && reading == 0 && toRead == 0);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Reading Status", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text("Reading Status", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 20),
           SizedBox(
             height: 150,
@@ -460,18 +463,18 @@ class ReadingStatusChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: isEmpty 
-                  ? Center(child: Text("No data yet", style: TextStyle(color: Colors.grey)))
+                  ? Center(child: Text("No data yet", style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey)))
                   : PieChart(
                     PieChartData(
                       sectionsSpace: 0,
                       centerSpaceRadius: 30,
                       sections: [
                         if (finished > 0)
-                        PieChartSectionData(value: finished.toDouble(), color: Colors.black, radius: 25, showTitle: false),
+                        PieChartSectionData(value: finished.toDouble(), color: isDark ? AppThemes.accentColor : Colors.black, radius: 25, showTitle: false),
                         if (reading > 0)
-                        PieChartSectionData(value: reading.toDouble(), color: Colors.grey.shade600, radius: 25, showTitle: false),
+                        PieChartSectionData(value: reading.toDouble(), color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, radius: 25, showTitle: false),
                         if (toRead > 0)
-                        PieChartSectionData(value: toRead.toDouble(), color: Colors.grey.shade300, radius: 25, showTitle: false),
+                        PieChartSectionData(value: toRead.toDouble(), color: isDark ? Colors.grey.shade700 : Colors.grey.shade300, radius: 25, showTitle: false),
                       ],
                     ),
                   ),
@@ -480,9 +483,9 @@ class ReadingStatusChart extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLegendItem(Colors.black, "Finished ($finished)"),
-                    _buildLegendItem(Colors.grey.shade600, "Reading ($reading)"),
-                    _buildLegendItem(Colors.grey.shade300, "To Read ($toRead)"),
+                    _buildLegendItem(isDark ? AppThemes.accentColor : Colors.black, "Finished ($finished)", isDark),
+                    _buildLegendItem(isDark ? Colors.grey.shade400 : Colors.grey.shade600, "Reading ($reading)", isDark),
+                    _buildLegendItem(isDark ? Colors.grey.shade700 : Colors.grey.shade300, "To Read ($toRead)", isDark),
                   ],
                 )
               ],
@@ -493,14 +496,14 @@ class ReadingStatusChart extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, String text) {
+  Widget _buildLegendItem(Color color, String text, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500)),
+          Text(text, style: TextStyle(color: isDark ? Colors.grey.shade300 : Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -514,6 +517,8 @@ class CategoryBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     // Compter les catégories
     Map<String, int> counts = {};
     for (var book in books) {
@@ -528,7 +533,7 @@ class CategoryBarChart extends StatelessWidget {
     if (top5.isEmpty) {
         return Container(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(20)),
           child: const Center(child: Text("No category data yet")),
         );
     }
@@ -536,13 +541,13 @@ class CategoryBarChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Categories", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text("Categories", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 20),
           SizedBox(
             height: 180,
@@ -564,14 +569,14 @@ class CategoryBarChart extends StatelessWidget {
                         // Shorten text
                         if (text.length > 4) text = text.substring(0, 3);
                         
-                        const style = TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 10);
+                        TextStyle style = TextStyle(color: isDark ? AppThemes.textSecondary : Colors.grey, fontWeight: FontWeight.bold, fontSize: 10);
                         return SideTitleWidget(meta: meta, child: Text(text, style: style));
                       },
                     ),
                   ),
                 ),
                 barGroups: List.generate(top5.length, (index) {
-                   return _makeBarData(index, counts[top5[index]]!.toDouble());
+                   return _makeBarData(index, counts[top5[index]]!.toDouble(), isDark);
                 }),
               ),
             ),
@@ -581,9 +586,19 @@ class CategoryBarChart extends StatelessWidget {
     );
   }
 
-  BarChartGroupData _makeBarData(int x, double y) {
+  BarChartGroupData _makeBarData(int x, double y, bool isDark) {
     return BarChartGroupData(x: x, barRods: [
-      BarChartRodData(toY: y, color: Colors.black, width: 12, borderRadius: BorderRadius.circular(4))
+      BarChartRodData(
+        toY: y, 
+        color: isDark ? AppThemes.accentColor : Colors.blue.shade400, 
+        width: 12, 
+        borderRadius: BorderRadius.circular(4),
+        backDrawRodData: BackgroundBarChartRodData(
+          show: true,
+          toY: (y * 1.2),
+          color: isDark ? AppThemes.darkSecondaryBg : Colors.grey.shade200,
+        ),
+      )
     ]);
   }
 }
@@ -594,16 +609,18 @@ class MonthlyProgressChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
+        color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Monthly Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text("Monthly Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black)),
           const SizedBox(height: 20),
           SizedBox(
             height: 150,
@@ -619,12 +636,12 @@ class MonthlyProgressChart extends StatelessWidget {
                       showTitles: true,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        const style = TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold);
+                        TextStyle style = TextStyle(color: isDark ? AppThemes.textSecondary : Colors.grey, fontSize: 10, fontWeight: FontWeight.bold);
                         switch(value.toInt()) {
-                          case 0: return const Text('Jan', style: style);
-                          case 2: return const Text('Mar', style: style);
-                          case 4: return const Text('May', style: style);
-                          case 6: return const Text('Jul', style: style);
+                          case 0: return Text('Jan', style: style);
+                          case 2: return Text('Mar', style: style);
+                          case 4: return Text('May', style: style);
+                          case 6: return Text('Jul', style: style);
                           default: return const Text('');
                         }
                       },
@@ -639,12 +656,12 @@ class MonthlyProgressChart extends StatelessWidget {
                       FlSpot(4, 4), FlSpot(5, 7), FlSpot(6, 6),
                     ],
                     isCurved: true,
-                    color: Colors.black,
+                    color: isDark ? AppThemes.accentColor : Colors.black,
                     barWidth: 3,
                     dotData: FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
-                      color: Colors.black.withOpacity(0.05),
+                      color: (isDark ? AppThemes.accentColor : Colors.black).withOpacity(0.05),
                     ),
                   ),
                 ],

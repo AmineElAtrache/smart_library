@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:smart_library/auth/auth.dart';
 import 'package:smart_library/pages/history.dart';
 import 'package:smart_library/providers/user_provider.dart';
+import 'package:smart_library/providers/theme_provider.dart';
+import 'package:smart_library/theme/app_themes.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -12,14 +14,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
-  bool _notificationsEnabled = true;
-
   @override
   Widget build(BuildContext context) {
     // Access the current user data
     final userProvider = Provider.of<UserProvider>(context);
     final user = userProvider.currentUser;
+    
+    // Access the theme provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -32,11 +34,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 30),
 
           // ---------- GENERAL SETTINGS ----------
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              'General',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Text(
+                  'General',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+                );
+              },
             ),
           ),
 
@@ -67,28 +74,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
 
           // ---------- PREFERENCES ----------
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 12),
-            child: Text(
-              'Preferences',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Text(
+                  'Preferences',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
+                );
+              },
             ),
           ),
 
           _buildSettingSwitch(
             icon: Icons.dark_mode_outlined,
             title: 'Dark Mode',
-            value: _isDarkMode,
+            value: themeProvider.isDarkMode,
             onChanged: (val) {
-              setState(() => _isDarkMode = val);
+              themeProvider.setDarkMode(val);
             },
           ),
           _buildSettingSwitch(
             icon: Icons.notifications_none,
             title: 'Notifications',
-            value: _notificationsEnabled,
+            value: true,
             onChanged: (val) {
-              setState(() => _notificationsEnabled = val);
+              // Notifications handling
             },
           ),
 
@@ -105,43 +117,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // --- WIDGET : SECTION PROFIL (Updated with dynamic data) ---
   Widget _buildProfileSection(String name, String email) {
-    return Row(
-      children: [
-        Container(
-          width: 70, height: 70,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey.shade200, width: 2),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/femme.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Row(
           children: [
-            Text(
-              name,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+            Container(
+              width: 70, height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppThemes.borderColor, width: 2),
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/femme.jpg'),
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              email,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: TextStyle(
+                    color: isDark ? AppThemes.textSecondary : Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppThemes.darkSecondaryBg : Colors.grey.shade200,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.edit_outlined, color: AppThemes.accentColor),
+              ),
             ),
           ],
-        ),
-        const Spacer(),
-        Container(
-          decoration: BoxDecoration(color: Colors.black.withOpacity(0.05), shape: BoxShape.circle),
-          child: IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_outlined, color: Colors.black),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -163,16 +190,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFFF0F0),
+          backgroundColor: Colors.redAccent,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.logout, color: Colors.red, size: 20),
+            Icon(Icons.logout, color: Colors.white, size: 20),
             SizedBox(width: 8),
-            Text('Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Log Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
       ),
@@ -181,42 +208,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // (Keep your _buildSettingItem and _buildSettingSwitch methods exactly as they were)
   Widget _buildSettingItem({required IconData icon, required String title, Widget? trailing, required VoidCallback onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: Icon(icon, color: Colors.black, size: 22),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-        trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppThemes.darkSecondaryBg : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: isDark ? AppThemes.borderColor : Colors.grey.shade300, width: 0.5),
+          ),
+          child: ListTile(
+            onTap: onTap,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? AppThemes.darkCardBg : Colors.grey.shade200,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppThemes.accentColor, size: 22),
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            trailing: trailing ?? Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? AppThemes.textTertiary : Colors.grey.shade600,
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildSettingSwitch({required IconData icon, required String title, required bool value, required ValueChanged<bool> onChanged}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(15)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child: Icon(icon, color: Colors.black, size: 22),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-        trailing: Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.black,
-          activeTrackColor: Colors.black.withOpacity(0.3),
-        ),
-      ),
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: isDark ? AppThemes.darkSecondaryBg : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: isDark ? AppThemes.borderColor : Colors.grey.shade300, width: 0.5),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? AppThemes.darkCardBg : Colors.grey.shade200,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppThemes.accentColor, size: 22),
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            trailing: Switch(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppThemes.accentColor,
+              activeTrackColor: AppThemes.accentColor.withOpacity(0.4),
+            ),
+          ),
+        );
+      },
     );
   }
 }

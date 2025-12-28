@@ -7,6 +7,7 @@ import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/models/books_model.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:smart_library/theme/app_themes.dart';
 
 class AddNoteScreen extends StatefulWidget {
   final Map<String, dynamic>? note;
@@ -196,30 +197,31 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
   @override
   Widget build(BuildContext context) {
     // Utilisation de Consumer pour éviter les erreurs de rebuild si le provider change
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Consumer<MyBooksProvider>(
       builder: (context, myBooksProvider, child) {
         final myBooks = myBooksProvider.myBooks;
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.black),
+              icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
               onPressed: () => Navigator.pop(context),
             ),
-            title: const Text(
+            title: Text(
               "New Note",
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
             actions: [
               TextButton(
                 onPressed: _submitData,
-                child: const Text(
+                child: Text(
                   "Save",
-                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(color: AppThemes.accentColor, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               )
             ],
@@ -229,7 +231,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Book Details", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text("Book Details", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? AppThemes.textSecondary : Colors.grey)),
                 const SizedBox(height: 15),
 
                 // --- DROPDOWN MENU ---
@@ -239,11 +241,11 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     width: constraints.maxWidth,
                     enableFilter: true,
                     requestFocusOnTap: true,
-                    leadingIcon: const Icon(Icons.book, color: Colors.black54),
-                    label: const Text("Select Book"),
+                    leadingIcon: Icon(Icons.book, color: isDark ? AppThemes.accentColor : Colors.black54),
+                    label: Text("Select Book", style: TextStyle(color: isDark ? AppThemes.textSecondary : Colors.black)),
                     inputDecorationTheme: InputDecorationTheme(
                       filled: true,
-                      fillColor: const Color(0xFFF5F7FA),
+                      fillColor: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -256,7 +258,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                         value: book,
                         label: book.title,
                         style: MenuItemButton.styleFrom(
-                          foregroundColor: Colors.black87,
+                          foregroundColor: isDark ? Colors.white : Colors.black87,
                         ),
                       );
                     }).toList(),
@@ -272,25 +274,35 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                 TextField(
                   controller: _pageController,
                   keyboardType: TextInputType.number,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color(0xFFF5F7FA),
-                    prefixIcon: const Icon(Icons.bookmark_border, color: Colors.black54),
+                    fillColor: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
+                    prefixIcon: Icon(Icons.bookmark_border, color: isDark ? AppThemes.accentColor : Colors.black54),
                     hintText: "Page Number",
+                    hintStyle: TextStyle(color: isDark ? AppThemes.textTertiary : Colors.grey),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 30),
-                const Text("Your Thoughts", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text("Your Thoughts", style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? AppThemes.textSecondary : Colors.grey)),
                 const SizedBox(height: 15),
                 Container(
-                  height: 250,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(12)),
+                  height: 320,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: TextField(
                     controller: _noteController,
                     maxLines: null,
-                    decoration: const InputDecoration(hintText: "Write or scan your quote...", border: InputBorder.none),
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 18, fontWeight: FontWeight.w500),
+                    decoration: InputDecoration(
+                      hintText: "Write or scan your quote...",
+                      hintStyle: TextStyle(color: isDark ? AppThemes.textTertiary : Colors.grey, fontSize: 18, fontWeight: FontWeight.w500),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -301,8 +313,8 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                     icon: const Icon(Icons.camera_alt),
                     label: const Text("Scan Text"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
+                      backgroundColor: isDark ? AppThemes.accentColor : Colors.blue,
+                      foregroundColor: isDark ? Colors.black : Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),

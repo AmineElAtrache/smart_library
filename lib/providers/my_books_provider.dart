@@ -45,7 +45,7 @@ class MyBooksProvider with ChangeNotifier {
     notifyListeners();
     try {
       _myBooks = await _dbHelper.getUserBooks(userId);
-      _bookStates = _myBooks.map((book) => (book.status == null || book.status.isEmpty) ? 'Not Read' : book.status).toList();
+      _bookStates = _myBooks.map((book) => (book.status.isEmpty) ? 'Not Read' : book.status).toList();
     } catch (e) {
       debugPrint("Error fetching books: $e");
     } finally {

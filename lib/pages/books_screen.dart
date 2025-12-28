@@ -6,6 +6,7 @@ import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/favorites_provider.dart';
 import 'package:smart_library/models/books_model.dart';
+import 'package:smart_library/theme/app_themes.dart';
 
 class MyBooksScreen extends StatefulWidget {
   const MyBooksScreen({Key? key}) : super(key: key);
@@ -15,7 +16,6 @@ class MyBooksScreen extends StatefulWidget {
 }
 
 class _MyBooksScreenState extends State<MyBooksScreen> {
-  String _selectedStatus = 'All';
   String _selectedAuthor = 'All';
   String _selectedCategory = 'All'; // Variable pour la catégorie sélectionnée
 
@@ -69,7 +69,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     final myBooksProvider = Provider.of<MyBooksProvider>(context, listen: false);
     
     if (!mounted) return;
-    myBooksProvider.loadPagesCounter(book.pages ?? 0);
+    myBooksProvider.loadPagesCounter(book.pages);
 
     Navigator.push(
       context,
@@ -81,6 +81,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final myBooksProvider = Provider.of<MyBooksProvider>(context);
     final favProvider = Provider.of<FavoriteBooksProvider>(context);
 
@@ -105,10 +106,10 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
     final uniqueCategories = getUniqueCategories(allBooks);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF1F2937)))
+            ? const Center(child: CircularProgressIndicator(color: AppThemes.accentColor))
             : RefreshIndicator(
                 onRefresh: () async => _loadData(),
                 child: SingleChildScrollView(
@@ -120,7 +121,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       favoriteBooks.isEmpty? const SizedBox.shrink():
                            Text(
                         'Your Favorites',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1F2937)),
                       )
                           , // <--- Ceci remplace null
                       favoriteBooks.isEmpty ? SizedBox.shrink() : const SizedBox(height: 16),
@@ -129,9 +130,9 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       favoriteBooks.isEmpty ? SizedBox.shrink() : const SizedBox(height: 32),
                       
                       // --- SECTION CATÉGORIES DYNAMIQUE ---
-                      const Text(
+                      Text(
                         'Categories',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1F2937)),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -153,13 +154,15 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFF1F2937) : Colors.grey.shade200,
+                                  color: isSelected 
+                                    ? (isDark ? AppThemes.accentColor : const Color(0xFF1F2937))
+                                    : (isDark ? AppThemes.darkSecondaryBg : Colors.grey.shade200),
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Text(
                                   category,
                                   style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.black87,
+                                    color: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white : Colors.black87),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -174,9 +177,9 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'my books',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1F2937)),
                           ),
                           _buildFilterButton(allBooks),
                         ],
@@ -188,7 +191,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
                            padding: const EdgeInsets.only(top: 8.0),
                            child: Text(
                              "Filtered by: ${_selectedCategory != 'All' ? 'Category: $_selectedCategory' : ''} ${_selectedAuthor != 'All' ? 'Author: $_selectedAuthor' : ''}",
-                             style: const TextStyle(color: Color(0xFF4F46E5), fontSize: 12),
+                             style: TextStyle(color: isDark ? AppThemes.accentColor : const Color(0xFF4F46E5), fontSize: 12),
                            ),
                          ),
 
@@ -309,27 +312,6 @@ class _MyBooksScreenState extends State<MyBooksScreen> {
       ),
     );
   }
-
-  Widget _buildEmptyFavorites() {
-    return Container(
-      width: double.infinity,
-      height: 150,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.favorite_border, color: Colors.grey, size: 40),
-          SizedBox(height: 8),
-          Text("No favorites found.", style: TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-
   // Cette méthode n'est plus utilisée directement car la liste est maintenant dynamique dans le build
   // Mais on peut la garder ou la supprimer. J'ai intégré le code directement dans le build pour plus de clarté.
   

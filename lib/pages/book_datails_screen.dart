@@ -6,6 +6,7 @@ import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/my_books_provider.dart';
 import 'package:intl/intl.dart'; // Importer pour le formatage de la date
 import 'package:smart_library/pages/edit_book_screen.dart'; // Importer l'écran d'édition
+import 'package:smart_library/theme/app_themes.dart';
 
 import '../providers/favorites_provider.dart';
 import 'layout.dart';
@@ -195,6 +196,8 @@ void _saveProgress() {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (_displayedBook == null) return const Scaffold(body: Center(child: Text("Book not found")));
 
     final status = _getLiveStatus(); 
@@ -224,17 +227,17 @@ void _saveProgress() {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: isDark ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context), 
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.format_quote, color: Colors.black), onPressed:(){}),
-          IconButton(icon: const Icon(Icons.more_horiz, color: Colors.black), onPressed: _showOptions),
+          IconButton(icon: Icon(Icons.format_quote, color: isDark ? Colors.white : Colors.black), onPressed:(){}),
+          IconButton(icon: Icon(Icons.more_horiz, color: isDark ? Colors.white : Colors.black), onPressed: _showOptions),
         ],
       ),
       body: SingleChildScrollView(
@@ -255,17 +258,17 @@ void _saveProgress() {
               ),
             ),
             const SizedBox(height: 30),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Serif')),
+            Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Serif', color: isDark ? Colors.white : Colors.black)),
             const SizedBox(height: 8),
-            Text(authors, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+            Text(authors, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: isDark ? Colors.grey.shade400 : Colors.grey.shade700, fontWeight: FontWeight.w500)),
             const SizedBox(height: 12),
-            Text(_displayedBook?.category ?? "General", style: TextStyle(color: Colors.grey.shade600)),
+            Text(_displayedBook?.category ?? "General", style: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.grey.shade600)),
             
             const SizedBox(height: 10),
             Center(
               child: Text(
                 "Added on: $addedDateText",
-                style: TextStyle(color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                style: TextStyle(color: isDark ? Colors.grey.shade600 : Colors.grey.shade500, fontStyle: FontStyle.italic),
               ),
             ),
 
@@ -273,25 +276,25 @@ void _saveProgress() {
 
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 8),
-                  Text("$_totalPages Pages", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  Text("$_totalPages Pages", style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 13)),
                   const SizedBox(height: 20),
-                  Text(description, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                  Text(description, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade300 : Colors.black87)),
                   const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: isFinished ? null : () => _toggleReading(isReading),
-                          icon: Icon(isReading ? Icons.stop_circle_outlined : Icons.menu_book, size: 18, color: isReading ? Colors.red : Colors.black),
-                          label: Text(isReading ? "Stop Reading" : "Read", style: TextStyle(color: isReading ? Colors.red : Colors.black)),
+                          icon: Icon(isReading ? Icons.stop_circle_outlined : Icons.menu_book, size: 18, color: isReading ? Colors.red : (isDark ? Colors.white : Colors.black)),
+                          label: Text(isReading ? "Stop Reading" : "Read", style: TextStyle(color: isReading ? Colors.red : (isDark ? Colors.white : Colors.black))),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(color: isFinished ? Colors.grey.shade300 : (isReading ? Colors.red : Colors.black)),
+                            side: BorderSide(color: isFinished ? Colors.grey.shade300 : (isReading ? Colors.red : (isDark ? Colors.grey.shade600 : Colors.black))),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
@@ -301,13 +304,13 @@ void _saveProgress() {
                         child: ElevatedButton(
                           onPressed: isReading ? _saveProgress : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor: isDark ? AppThemes.accentColor : Colors.black,
                             disabledBackgroundColor: Colors.grey.shade300,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: const Text("Save", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text("Save", style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -327,9 +330,9 @@ void _saveProgress() {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
+                      color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
                       borderRadius: BorderRadius.circular(20),
-                      border: isReading ? Border.all(color: Colors.black, width: 1.5) : null,
+                      border: isReading ? Border.all(color: isDark ? AppThemes.accentColor : Colors.black, width: 1.5) : null,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,8 +340,8 @@ void _saveProgress() {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Reading Progress", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text("${_totalPages > 0 ? (_currentPage / _totalPages * 100).toInt() : 0}%", style: TextStyle(fontWeight: FontWeight.bold, color: isReading ? Colors.black : Colors.grey)),
+                            Text("Reading Progress", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black)),
+                            Text("${_totalPages > 0 ? (_currentPage / _totalPages * 100).toInt() : 0}%", style: TextStyle(fontWeight: FontWeight.bold, color: isReading ? (isDark ? AppThemes.accentColor : Colors.black) : Colors.grey)),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -347,7 +350,7 @@ void _saveProgress() {
                           value: _currentPage, 
                           min: 0, 
                           max: _totalPages > 0 ? _totalPages.toDouble() : 1, 
-                          activeColor: Colors.black,
+                          activeColor: isDark ? AppThemes.accentColor : Colors.black,
                           onChanged: (value) {
                             setState(() {
                               _currentPage = value;
@@ -361,7 +364,7 @@ void _saveProgress() {
                           children: [
                             Row(
                               children: [
-                                const Text("Page ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text("Page ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isDark ? Colors.white : Colors.black)),
                                 SizedBox(
                                   width: 70, height: 35,
                                   child: TextField(
@@ -369,16 +372,17 @@ void _saveProgress() {
                                     keyboardType: TextInputType.number,
                                     textAlign: TextAlign.center,
                                     onChanged: _onPageInputChanged,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? AppThemes.accentColor : Colors.black, fontSize: 16),
                                     decoration: InputDecoration(
-                                      filled: true, fillColor: Colors.white,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                      filled: true, fillColor: isDark ? AppThemes.darkSecondaryBg : Colors.white,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isDark ? AppThemes.borderColor : Colors.grey.shade300)),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            Text("of $_totalPages", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                            Text("of $_totalPages", style: TextStyle(color: isDark ? AppThemes.textSecondary : Colors.grey.shade600, fontSize: 14)),
                           ],
                         ),
                       ],
@@ -393,7 +397,7 @@ void _saveProgress() {
               child: ElevatedButton(
                 onPressed: isFinished ? null : _markAsFinished,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: isDark ? AppThemes.accentColor : Colors.black,
                   disabledBackgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -401,10 +405,10 @@ void _saveProgress() {
                 ),
                 child: Text(
                   isFinished ? 'Finished' : "Mark as Finished",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isDark ? Colors.black : Colors.white,
                   ),
                 ),
               ),
