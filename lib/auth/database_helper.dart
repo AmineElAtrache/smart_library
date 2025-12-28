@@ -11,7 +11,8 @@ class DatabaseHelper{
    usrId INTEGER PRIMARY KEY AUTOINCREMENT,
    fullName TEXT,
    email TEXT UNIQUE, 
-   usrPassword TEXT
+   usrPassword TEXT,
+   profilePicture TEXT
    )
    ''';
 
@@ -152,6 +153,13 @@ class DatabaseHelper{
              print("Migration error v11 (ignored if table exists): $e");
            }
         }
+        if (oldVersion < 12) {
+           try {
+             await db.execute("ALTER TABLE users ADD COLUMN profilePicture TEXT");
+           } catch (e) {
+             print("Migration error v12 (ignored if column exists): $e");
+           }
+        }
       },
     );
   }
@@ -175,6 +183,20 @@ class DatabaseHelper{
     final Database db = await initDB();
     var res = await db.query("users",where: "email = ?", whereArgs: [email]);
     return res.isNotEmpty? Users.fromMap(res.first):null;
+  }
+
+  Future<int> updateUser(Users usr) async {
+    final Database db = await initDB();
+    return await db.update(
+      "users",
+      {
+        "fullName": usr.fullName,
+        "email": usr.email,
+        "usrPassword": usr.password,
+      },
+      where: "usrId = ?",
+      whereArgs: [usr.usrId],
+    );
   }
 
   Future<int> insertFavorite(Book book, int usrId) async {

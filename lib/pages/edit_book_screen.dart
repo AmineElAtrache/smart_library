@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/books_model.dart';
 import '../providers/my_books_provider.dart';
 import '../providers/user_provider.dart';
+import '../theme/app_themes.dart';
 
 // Assurez-vous que votre classe Book est bien importée ou définie quelque part
 // import 'book_model.dart';
@@ -119,16 +120,18 @@ class _EditBookScreenState extends State<EditBookScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
       appBar: AppBar(
-        title: const Text("Edit Book", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text("Edit Book", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? AppThemes.darkBg : Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: Colors.blue),
+            icon: Icon(Icons.check, color: isDark ? AppThemes.accentColor : Colors.blue),
             onPressed: _saveBook,
           )
         ],
@@ -180,14 +183,15 @@ class _EditBookScreenState extends State<EditBookScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
+                  color: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _status,
                     isExpanded: true,
-                    items: _statusOptions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    dropdownColor: isDark ? AppThemes.darkSecondaryBg : Colors.white,
+                    items: _statusOptions.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(color: isDark ? Colors.white : Colors.black)))).toList(),
                     onChanged: (val) => setState(() => _status = val!),
                   ),
                 ),
@@ -202,12 +206,12 @@ class _EditBookScreenState extends State<EditBookScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
+                      backgroundColor: isDark ? AppThemes.accentColor : Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                   ),
                   onPressed: _saveBook,
-                  child: const Text("Save Changes", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text("Save Changes", style: TextStyle(color: isDark ? Colors.black : Colors.white, fontWeight: FontWeight.bold)),
                 ),
               )
             ],
@@ -218,16 +222,20 @@ class _EditBookScreenState extends State<EditBookScreen> {
   }
 
   Widget _buildTextField(String label, TextEditingController ctrl, IconData icon, {bool isNumber = false, int maxLines = 1}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return TextFormField(
       controller: ctrl,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
       maxLines: maxLines,
       validator: (v) => v!.isEmpty ? "Required" : null,
+      style: TextStyle(color: isDark ? Colors.white : Colors.black),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: maxLines == 1 ? Icon(icon, color: Colors.grey) : null,
+        labelStyle: TextStyle(color: isDark ? Colors.grey : Colors.grey.shade600),
+        prefixIcon: maxLines == 1 ? Icon(icon, color: isDark ? AppThemes.accentColor : Colors.grey) : null,
         filled: true,
-        fillColor: const Color(0xFFF5F7FA),
+        fillColor: isDark ? AppThemes.darkSecondaryBg : const Color(0xFFF5F7FA),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
     );

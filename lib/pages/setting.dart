@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_library/auth/auth.dart';
 import 'package:smart_library/pages/history.dart';
+import 'package:smart_library/pages/edit_profile_screen.dart';
 import 'package:smart_library/providers/user_provider.dart';
 import 'package:smart_library/providers/theme_provider.dart';
 import 'package:smart_library/theme/app_themes.dart';
@@ -109,44 +110,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Row(
-          children: [
-            Container(
-              width: 70, height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppThemes.borderColor, width: 2),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/userlogo.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
+        return GestureDetector(
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+            );
+            if (result == true) {
+              setState(() {}); // Refresh the profile section
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? AppThemes.darkCardBg : const Color(0xFFF5F7FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppThemes.borderColor),
             ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black,
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppThemes.borderColor, width: 2),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/images/userlogo.png'),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: TextStyle(
-                    color: isDark ? AppThemes.textSecondary : Colors.grey.shade600,
-                    fontSize: 14,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: isDark ? AppThemes.textSecondary : Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
+                Icon(Icons.edit, color: isDark ? AppThemes.accentColor : Colors.blue, size: 24),
               ],
             ),
-            const Spacer(),
-
-          ],
+          ),
         );
       },
     );

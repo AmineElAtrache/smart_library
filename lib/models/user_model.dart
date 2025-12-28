@@ -9,12 +9,14 @@ class Users {
   final String? fullName;
   final String email; // Now the unique identifier
   final String password;
+  final String? profilePicture; // Added for profile picture path
 
   Users({
     this.usrId,
     this.fullName,
     required this.email,
     required this.password,
+    this.profilePicture,
   });
 
   // copyWith allows you to update parts of the user object easily
@@ -23,12 +25,14 @@ class Users {
     String? fullName,
     String? email,
     String? password,
+    String? profilePicture,
   }) =>
       Users(
         usrId: usrId ?? this.usrId,
         fullName: fullName ?? this.fullName,
         email: email ?? this.email,
         password: password ?? this.password,
+        profilePicture: profilePicture ?? this.profilePicture,
       );
 
   factory Users.fromMap(Map<String, dynamic> json) => Users(
@@ -36,6 +40,7 @@ class Users {
         fullName: json["fullName"],
         email: json["email"], 
         password: json["usrPassword"], // Matches your database column name
+        profilePicture: json["profilePicture"],
       );
 
   Map<String, dynamic> toMap() => {
@@ -43,5 +48,6 @@ class Users {
         "fullName": fullName,
         "email": email,
         "usrPassword": password,
+        "profilePicture": profilePicture,
       };
 }
