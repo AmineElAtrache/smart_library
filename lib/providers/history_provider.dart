@@ -15,6 +15,10 @@ class HistoryProvider with ChangeNotifier {
     try {
       // Using the join query we discussed earlier to get book titles/images
       _history = await DatabaseHelper().getReadingHistory(userId);
+      debugPrint("History fetched: ${_history.length} items");
+      for (var item in _history) {
+        debugPrint("History item: title=${item['title']}, thumbnail=${item['thumbnail']}, status=${item['status']}");
+      }
     } catch (e) {
       debugPrint("History Fetch Error: $e");
     } finally {

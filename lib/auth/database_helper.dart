@@ -250,7 +250,24 @@ class DatabaseHelper{
 
   Future<List<Map<String, dynamic>>> getReadingHistory(int usrId) async {
     final Database db = await initDB();
-    return await db.query("reading_history", where: "usrId = ?", whereArgs: [usrId]);
+    return await db.rawQuery(
+      '''
+      SELECT 
+        rh.bookId,
+        rh.usrId,
+        rh.startDate,
+        rh.endDate,
+        rh.status,
+        mb.title,
+        mb.thumbnail,
+        mb.authors
+      FROM reading_history rh
+      LEFT JOIN mybooks mb ON rh.bookId = mb.id AND rh.usrId = mb.usrId
+      WHERE rh.usrId = ?
+      ORDER BY rh.startDate DESC
+      ''',
+      [usrId],
+    );
   }
 
   Future<void> updateReadingHistory(String bookId, int usrId, String status) async {

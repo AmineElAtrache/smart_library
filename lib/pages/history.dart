@@ -222,10 +222,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: (path != null && path.startsWith('http'))
-            ? Image.network(path, fit: BoxFit.cover)
+        child: (path != null && path.isNotEmpty && path.startsWith('http'))
+            ? Image.network(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade300, child: const Icon(Icons.book, color: Colors.white)))
             : (path != null && path.isNotEmpty)
-                ? Image.file(File(path), fit: BoxFit.cover)
+                ? Image.file(File(path), fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade300, child: const Icon(Icons.book, color: Colors.white)))
                 : Container(color: Colors.grey.shade300, child: const Icon(Icons.book, color: Colors.white)),
       ),
     );
