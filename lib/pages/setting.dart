@@ -47,7 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          
+
           _buildSettingItem(
             icon: Icons.language,
             title: 'Language',
@@ -91,14 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               themeProvider.setDarkMode(val);
             },
           ),
-          _buildSettingSwitch(
-            icon: Icons.notifications_none,
-            title: 'Notifications',
-            value: true,
-            onChanged: (val) {
-              // Notifications handling
-            },
-          ),
+        
 
           const SizedBox(height: 30),
 
