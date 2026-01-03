@@ -83,11 +83,10 @@ A comprehensive Flutter application for managing personal and institutional libr
 
 ## 📺 Video Demo
 
-Watch the Smart Library in action! Here's where you can add your video demo:
+Watch the Smart Library in action! Click the image below to view the full demo video:
 
-```markdown
-![Smart Library Demo](demos/smart_library_demo.mp4)
-```
+[![Smart Library Demo](https://img.youtube.com/vi/XCX0we7ApmU/0.jpg)](https://www.youtube.com/watch?v=XCX0we7ApmU)
+
 
 ## 🛠️ Technology Stack
 
